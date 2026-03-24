@@ -1,7 +1,12 @@
-export async function loader() {
-  return null;
-}
+import { Link } from "react-router";
 
 export default function Home() {
-  return <h1>Home</h1>;
+  return (
+    <div>
+      <h1>Accueil</h1>
+      <p>Page publique</p>
+
+      <Link to="/login">Aller vers la connexion</Link>
+    </div>
+  );
 }
