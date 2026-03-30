@@ -1,18 +1,21 @@
 export const mockUserInfo = {
-    profile: {
-        firstName: "Lucas",
-        lastName: "Dubois",
-        createdAt: "2025-02-10",
-        age: 28,
-        weight: 72,
-        height: 178,
-        profilePicture: "http://localhost:8000/images/lucas.jpg"
-    },
-    statistics: {
-        totalDistance: 1850.5,
-        totalSessions: 290,
-        totalDuration: 12040
-    }
+  profile: {
+    firstName: "Nina",
+    lastName: "Moreau",
+    createdAt: "3 septembre 2023",
+    age: 31,
+    gender: "Femme",
+    height: "1m72",
+    weight: "61kg",
+    profilePicture,
+  },
+  statistics: {
+    totalDistance: "286 km",
+    totalSessions: "36 sessions",
+    totalDuration: "24h 40min",
+    caloriesBurned: "21400 cal",
+    restDays: "11 jours",
+  },
 };
 
 export const mockUserActivity = [

@@ -1,41 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
-import { getToken, removeToken } from "../utils/auth";
+import Header from "../components/Header";
+import { useAppContext } from "../context/AppContext";
 
 export default function Dashboard() {
   // permet de changer de page 
   const navigate = useNavigate();
-  // sert à attendre la vérification du token
-  const [checked, setChecked] = useState(false);
-  // vérifie si l'utilisateur est connecté
+  // Le dashboard lit l'état d'authentification depuis le contexte partagé
+  const { isAuthenticated, isCheckingAuth, logout } = useAppContext();
+
+  // Une fois l'initialisation terminée, on protège la route en redirigeant
+  // les visiteurs non authentifiés vers la page de connexion
   useEffect(() => {
-    // on récupère le token stocké dans le navigateur
-    const token = getToken();
-    // si aucun token → redirection vers login
-    if (!token) {
-      navigate("/login");
-      return;
+    if (!isCheckingAuth && !isAuthenticated) {
+      navigate("/", { replace: true });
     }
-    // si token présent → on autorise l'accès
-    setChecked(true);
-  }, [navigate]);
+  }, [isAuthenticated, isCheckingAuth, navigate]);
+
   // fonction appelée quand on clique sur "Se déconnecter"
   const handleLogout = () => {
-    removeToken();
-    navigate("/login");
+    logout();
+    navigate("/", { replace: true });
   };
-  // tant que la vérification n'est pas terminée
-  if (!checked) {
-    return <p>Vérification...</p>;
+  // Tant que la vérification de l'authentification est en cours, on n'affiche rien
+  if (!isAuthenticated) {
+    return null;
   }
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Page protégée</p>
-      <button onClick={handleLogout}>
-        Se déconnecter
-      </button>
 
-    </div>
+  return (
+    <main className="dashboard-page">
+      <div className="dashboard-shell">
+        <Header onLogout={handleLogout} />
+
+        <section className="dashboard-content">
+          <h1 className="dashboard-content__title">Dashboard</h1>
+          <p className="dashboard-content__text">Page du dashboard</p>
+        </section>
+      </div>
+    </main>
   );
 }
