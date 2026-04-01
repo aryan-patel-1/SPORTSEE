@@ -1,3 +1,5 @@
+import profilePicture from "../img/Background_picture_sportsee.png";
+
 export const mockUserInfo = {
   profile: {
     firstName: "Nina",
