@@ -1,5 +1,11 @@
 import profilePicture from "../img/Background_picture_sportsee.png";
 
+export const mockAuth = {
+  username: "ninasportsee",
+  password: "sportsee123",
+  token: "mock-token-nina-moreau",
+};
+
 export const mockUserInfo = {
   profile: {
     firstName: "Nina",

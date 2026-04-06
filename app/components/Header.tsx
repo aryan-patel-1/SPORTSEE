@@ -1,4 +1,4 @@
-import { NavLink } from "react-router";
+import { Link, NavLink } from "react-router";
 import logo from "../img/Logo.png";
 
 type HeaderProps = {
@@ -14,9 +14,18 @@ function getNavLinkClass({ isActive }: { isActive: boolean }) {
 export default function Header({ onLogout }: HeaderProps) {
   return (
     <header className="dashboard-header">
-      <img src={logo} alt="Logo Sportsee" className="dashboard-header__logo" />
+      <Link to="/dashboard" aria-label="Retour au dashboard">
+        <img
+          src={logo}
+          alt="Logo Sportsee"
+          className="dashboard-header__logo"
+        />
+      </Link>
 
-      <nav className="dashboard-header__nav" aria-label="Navigation du dashboard">
+      <nav
+        className="dashboard-header__nav"
+        aria-label="Navigation du dashboard"
+      >
         <NavLink to="/dashboard" className={getNavLinkClass}>
           Dashboard
         </NavLink>
@@ -24,7 +33,11 @@ export default function Header({ onLogout }: HeaderProps) {
           Mon profil
         </NavLink>
         <span className="dashboard-header__divider" aria-hidden="true" />
-        <button type="button" className="dashboard-header__logout" onClick={onLogout}>
+        <button
+          type="button"
+          className="dashboard-header__logout"
+          onClick={onLogout}
+        >
           Se déconnecter
         </button>
       </nav>

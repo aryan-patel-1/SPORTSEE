@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../context/AppContext";
+import { loginUser } from "../utils/api";
 import logo from "../img/Logo.png";
 import backgroundPicture from "../img/Background_picture_sportsee.png";
 
@@ -34,20 +35,7 @@ export default function Login() {
     setError("");
 
     try {
-      // Appel API de connexion
-      const response = await fetch("http://localhost:8000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-        }),
-      });
-
-      // Lecture de la réponse JSON du backend
-      const data = await response.json();
+      const data = await loginUser(username, password);
 
       // Si un token est renvoyé, on connecte l'utilisateur puis on redirige
       if (data.token) {

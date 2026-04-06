@@ -1,14 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useAppContext } from "../context/AppContext";
-import { mockUserInfo } from "../mocks/mockdata";
+import { getToken } from "../utils/auth";
+import {
+  enrichUserInfoWithActivity,
+  getUserActivity,
+  getUserInfo,
+  type UserInfo,
+} from "../utils/dataProvider";
+
+const PROFILE_FIELDS = [
+  { label: "Âge", key: "age" },
+  { label: "Genre", key: "gender" },
+  { label: "Taille", key: "height" },
+  { label: "Poids", key: "weight" },
+] as const;
+
+const STAT_FIELDS = [
+  { label: "Temps total couru", key: "totalDuration" },
+  { label: "Calories brûlées", key: "caloriesBurned" },
+  { label: "Distance totale parcourue", key: "totalDistance" },
+  { label: "Nombre de jours de repos", key: "restDays" },
+  { label: "Nombre de sessions", key: "totalSessions" },
+] as const;
+
+function Message({ children }: { children: React.ReactNode }) {
+  return <p>{children}</p>;
+}
 
 export default function Profil() {
   const navigate = useNavigate();
   const { isAuthenticated, isCheckingAuth, logout } = useAppContext();
-  const { profile, statistics } = mockUserInfo;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   useEffect(() => {
     if (!isCheckingAuth && !isAuthenticated) {
@@ -16,18 +43,70 @@ export default function Profil() {
     }
   }, [isAuthenticated, isCheckingAuth, navigate]);
 
+  useEffect(() => {
+    // Le profil dépend à la fois des infos utilisateur et de l'historique
+    // pour compléter les stats absentes comme les calories et les jours de repos.
+    if (isCheckingAuth || !isAuthenticated) {
+      return;
+    }
+
+    const token = getToken();
+
+    if (!token) {
+      setLoading(false);
+      setError("Session introuvable");
+      return;
+    }
+
+    const authToken = token;
+
+    async function loadProfile() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [profileData, activityData] = await Promise.all([
+          getUserInfo(authToken),
+          getUserActivity(authToken),
+        ]);
+
+        setUserInfo(enrichUserInfoWithActivity(profileData, activityData));
+      } catch {
+        setError("Erreur lors du chargement du profil");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [isAuthenticated, isCheckingAuth]);
+
   const handleLogout = () => {
     logout();
     navigate("/", { replace: true });
   };
 
   if (isCheckingAuth) {
-    return <p>Vérification...</p>;
+    return <Message>Vérification...</Message>;
   }
 
   if (!isAuthenticated) {
     return null;
   }
+
+  if (loading) {
+    return <Message>Chargement du profil...</Message>;
+  }
+
+  if (error) {
+    return <Message>{error}</Message>;
+  }
+
+  if (!userInfo) {
+    return <Message>Données du profil indisponibles</Message>;
+  }
+
+  const { profile, statistics } = userInfo;
 
   return (
     <div className="profile-page-layout">
@@ -59,16 +138,11 @@ export default function Profil() {
                 <hr className="profile-details-card__divider" />
 
                 <div className="profile-details-list">
-                  <p className="profile-details-item">Âge : {profile.age}</p>
-                  <p className="profile-details-item">
-                    Genre : {profile.gender}
-                  </p>
-                  <p className="profile-details-item">
-                    Taille : {profile.height}
-                  </p>
-                  <p className="profile-details-item">
-                    Poids : {profile.weight}
-                  </p>
+                  {PROFILE_FIELDS.map(({ label, key }) => (
+                    <p key={key} className="profile-details-item">
+                      {label} : {profile[key]}
+                    </p>
+                  ))}
                 </div>
               </article>
             </div>
@@ -80,46 +154,14 @@ export default function Profil() {
               </p>
 
               <div className="profile-stats-grid">
-                <article className="profile-stat-card">
-                  <p className="profile-stat-card__label">Temps total couru</p>
-                  <p className="profile-stat-card__measure">
-                    {statistics.totalDuration}
-                  </p>
-                </article>
-
-                <article className="profile-stat-card">
-                  <p className="profile-stat-card__label">Calories brûlées</p>
-                  <p className="profile-stat-card__measure">
-                    {statistics.caloriesBurned}
-                  </p>
-                </article>
-
-                <article className="profile-stat-card">
-                  <p className="profile-stat-card__label">
-                    Distance totale parcourue
-                  </p>
-                  <p className="profile-stat-card__measure">
-                    {statistics.totalDistance}
-                  </p>
-                </article>
-
-                <article className="profile-stat-card">
-                  <p className="profile-stat-card__label">
-                    Nombre de jours de repos
-                  </p>
-                  <p className="profile-stat-card__measure">
-                    {statistics.restDays}
-                  </p>
-                </article>
-
-                <article className="profile-stat-card">
-                  <p className="profile-stat-card__label">
-                    Nombre de sessions
-                  </p>
-                  <p className="profile-stat-card__measure">
-                    {statistics.totalSessions}
-                  </p>
-                </article>
+                {STAT_FIELDS.map(({ label, key }) => (
+                  <article key={key} className="profile-stat-card">
+                    <p className="profile-stat-card__label">{label}</p>
+                    <p className="profile-stat-card__measure">
+                      {statistics[key]}
+                    </p>
+                  </article>
+                ))}
               </div>
             </section>
           </section>
