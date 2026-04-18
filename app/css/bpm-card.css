@@ -1,0 +1,140 @@
+.bpm-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 620px;
+  min-height: 374px;
+}
+
+.bpm-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.bpm-card__header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.bpm-card__title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff3b0a;
+  line-height: 1.2;
+}
+
+.bpm-card__subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+.bpm-card__period {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #3a3a3a;
+  white-space: nowrap;
+}
+
+.bpm-card__arrow {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #9a9a9a;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555555;
+  padding: 0;
+}
+
+.bpm-card__arrow:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.bpm-card__chart {
+  width: 100%;
+  height: 240px;
+  margin-top: 4px;
+}
+
+.bpm-card__legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #7a7a7a;
+  flex-wrap: wrap;
+}
+
+.bpm-card__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 34px;
+  margin-left: 28px;
+}
+
+.bpm-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bpm-card__dot--min {
+  background: #f3b8ac;
+}
+
+.bpm-card__dot--max {
+  background: #ff3b0a;
+}
+
+.bpm-card__dot--avg {
+  background: #1f38ff;
+}
+
+.bpm-card__tooltip {
+  background: #111111;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.bpm-card__tooltip-date {
+  margin: 0 0 6px;
+  font-size: 10px;
+  color: #d6d6d6;
+}
+
+.bpm-card__tooltip-value {
+  margin: 0 0 3px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bpm-card__tooltip-value:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1100px) {
+  .bpm-card {
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,76 @@
+.header {
+  width: 100%;
+  background: #f3f3fb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 24px;
+  box-sizing: border-box;
+}
+
+.header__container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header__logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.header__logo-img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.header__nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #ffffff;
+  padding: 8px 22px;
+  border-radius: 999px;
+}
+
+.header__link,
+.header__logout {
+  font-size: 12px;
+  font-weight: 500;
+  color: #2f2f2f;
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.header__link:hover,
+.header__logout:hover {
+  color: #243cff;
+}
+
+.header__link--active {
+  color: #243cff;
+}
+
+.header__logout {
+  position: relative;
+  margin-left: 8px;
+  padding-left: 22px;
+  color: #3b4cff;
+}
+
+.header__logout::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 16px;
+  background: #cad0ff;
+  transform: translateY(-50%);
+}

@@ -1,46 +1,53 @@
-import { Link, NavLink } from "react-router";
-import logo from "../img/Logo.png";
+import { Link, NavLink, useNavigate } from "react-router";
+import { removeToken } from "../utils/auth";
+import "../css/header.css";
 
 type HeaderProps = {
-  onLogout: () => void;
+  onLogout?: () => void;
 };
 
-function getNavLinkClass({ isActive }: { isActive: boolean }) {
-  return isActive
-    ? "dashboard-header__link dashboard-header__link--current"
-    : "dashboard-header__link";
-}
-
 export default function Header({ onLogout }: HeaderProps) {
-  return (
-    <header className="dashboard-header">
-      <Link to="/dashboard" aria-label="Retour au dashboard">
-        <img
-          src={logo}
-          alt="Logo Sportsee"
-          className="dashboard-header__logo"
-        />
-      </Link>
+  const navigate = useNavigate();
 
-      <nav
-        className="dashboard-header__nav"
-        aria-label="Navigation du dashboard"
-      >
-        <NavLink to="/dashboard" className={getNavLinkClass}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/profil" className={getNavLinkClass}>
-          Mon profil
-        </NavLink>
-        <span className="dashboard-header__divider" aria-hidden="true" />
-        <button
-          type="button"
-          className="dashboard-header__logout"
-          onClick={onLogout}
-        >
-          Se déconnecter
-        </button>
-      </nav>
+  const handleLogout = () => {
+    removeToken();
+    if (onLogout) {
+      onLogout();
+    }
+    navigate("/", { replace: true, viewTransition: true });
+  };
+
+  return (
+    <header className="header">
+      <div className="header__container">
+        <Link to="/dashboard" className="header__logo" viewTransition>
+          <img src="/logo.png" alt="Logo SportSee" className="header__logo-img" />
+        </Link>
+        <nav className="header__nav">
+          <NavLink
+            to="/dashboard"
+            end
+            viewTransition
+            className={({ isActive }) =>
+              isActive ? "header__link header__link--active" : "header__link"
+            }
+          >
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/profile"
+            viewTransition
+            className={({ isActive }) =>
+              isActive ? "header__link header__link--active" : "header__link"
+            }
+          >
+            Mon profil
+          </NavLink>
+          <button type="button" className="header__logout" onClick={handleLogout}>
+            Se déconnecter
+          </button>
+        </nav>
+      </div>
     </header>
   );
 }

@@ -1,125 +1,107 @@
-import { useState, useEffect } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router";
-import { useAppContext } from "../context/AppContext";
-import { loginUser } from "../utils/api";
-import logo from "../img/Logo.png";
-import backgroundPicture from "../img/Background_picture_sportsee.png";
+import { saveToken } from "../utils/auth";
+import { UserContext } from "../context/UserContext";
+import "../css/login.css";
 
 export default function Login() {
-  // États locaux du formulaire
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  // Message d'erreur affiché sous le formulaire si la connexion échoue
   const [error, setError] = useState("");
-
-  // Permet de changer de page après connexion
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  // Le contexte gère l'état global de connexion
-  const { login, isAuthenticated, isCheckingAuth } = useAppContext();
-
-  // Si un utilisateur a déjà une session active, il ne reste pas sur login
-  useEffect(() => {
-    if (!isCheckingAuth && isAuthenticated) {
-      navigate("/dashboard");
-    }
-  }, [isCheckingAuth, isAuthenticated, navigate]);
-
-  // Envoie les identifiants au backend pour récupérer un token
-  const handleSubmit = async (e: any) => {
-    // Empêche le rechargement de la page
+  const context = useContext(UserContext);
+  if (!context) {
+    return <p>Erreur de contexte</p>;
+  }
+  const { setUser } = context;
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Réinitialise l'ancien message d'erreur avant un nouvel essai
     setError("");
-
+    setLoading(true);
     try {
-      const data = await loginUser(username, password);
-
-      // Si un token est renvoyé, on connecte l'utilisateur puis on redirige
+      const response = await fetch("http://localhost:8000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json();
       if (data.token) {
-        login(data.token);
+        saveToken(data.token);
+        setUser({
+          username: username,
+          userId: data.userId,
+        });
         navigate("/dashboard");
-        return;
+      } else {
+        setError("Identifiants incorrects");
       }
-
-      // Si aucun token n'est reçu, les identifiants sont considérés comme invalides
-      setError("Identifiants incorrects ou mot de passe invalide");
     } catch (error) {
-      // En cas d'erreur réseau ou serveur, on affiche un message générique
-      console.error("Erreur login :", error);
       setError("Erreur serveur");
+    } finally {
+      setLoading(false);
     }
   };
-
   return (
     <main className="login-page">
-      {/* Partie gauche : logo et formulaire */}
-      <section className="login-page__panel">
-        <img
-          src={logo}
-          alt="Logo Sportsee"
-          className="login-page__logo"
-        />
+      <section className="login-page__left">
+        <div className="login-page__logo">
+          <img src="/logo.png" alt="SportSee" />
+        </div>
 
-        <div className="login-page__card">
-          <p className="login-page__eyebrow">Transformez</p>
-          <h1 className="login-page__title">vos stats en résultats</h1>
-          <p className="login-page__subtitle">Se connecter</p>
+        <div className="login-card">
+          <h1 className="login-card__title">
+            Transformez
+            <br />
+            vos stats en résultats
+          </h1>
 
-          <form className="login-page__form" onSubmit={handleSubmit}>
-            <div className="login-page__field">
-              <label className="login-page__label" htmlFor="username">
-                Adresse email
-              </label>
+          <h2 className="login-card__subtitle">Se connecter</h2>
+
+          <form className="login-form" onSubmit={handleSubmit}>
+            <div className="login-form__group">
+              <label htmlFor="username">Adresse email</label>
               <input
                 id="username"
-                className="login-page__input"
                 type="text"
+                placeholder=""
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
               />
             </div>
 
-            <div className="login-page__field">
-              <label className="login-page__label" htmlFor="password">
-                Mot de passe
-              </label>
+            <div className="login-form__group">
+              <label htmlFor="password">Mot de passe</label>
               <input
                 id="password"
-                className="login-page__input"
                 type="password"
+                placeholder=""
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
               />
             </div>
 
-            <button
-              className="login-page__submit"
-              type="submit"
-            >
-              Se connecter
+            <button className="login-form__button" type="submit" disabled={loading}>
+              {loading ? "Connexion..." : "Se connecter"}
             </button>
           </form>
 
-          {error ? <p className="login-page__error">{error}</p> : null}
+          <p className="login-card__forgot">Mot de passe oublié ?</p>
+
+          {error && <p className="login-card__error">{error}</p>}
         </div>
       </section>
 
-      {/* Partie droite : image */}
-      <section className="login-page__visual" aria-hidden="true">
+      <section className="login-page__right">
         <img
-          src={backgroundPicture}
-          alt=""
           className="login-page__image"
+          src="/login-runner.png"
+          alt="Course à pied"
         />
-        <div className="login-page__badge">
-          Analysez vos performances en un clin d&apos;oeil, suivez vos progrès
-          et atteignez vos objectifs.
-        </div>
       </section>
     </main>
   );

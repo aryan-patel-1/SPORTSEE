@@ -3,34 +3,31 @@ import {
   Meta,
   Outlet,
   Scripts,
+  ScrollRestoration,
 } from "react-router";
-import { AppProvider } from "./context/AppContext";
-
 import "./app.css";
-
+import { UserProvider } from "./context/UserContext";
+import Footer from "./components/Footer";
 export default function App() {
   return (
-    // Le provider rend l'état global disponible dans toutes les pages
-    <AppProvider>
-      {/* Outlet affiche la route actuellement active */}
+    <UserProvider>
       <Outlet />
-    </AppProvider>
+    </UserProvider>
   );
 }
-
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    // Layout définit la structure HTML commune à toute l'application
     <html lang="fr">
       <head>
         <meta charSet="utf-8" />
-        {/* Injecte les balises meta générées par React Router */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
       <body>
-        {/* children correspond au contenu de la page affichée ( Outlet ) */}
         {children}
+        <Footer />
+        <ScrollRestoration />
         <Scripts />
       </body>
     </html>

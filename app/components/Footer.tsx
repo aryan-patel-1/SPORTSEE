@@ -1,27 +1,21 @@
-import footerMark from "../img/footer_sportsee.png";
+import "../css/footer.css";
+
 
 export default function Footer() {
   return (
-    <footer className="site-footer">
-      <div className="site-footer__inner">
-        <p className="site-footer__copyright">
+    <footer className="footer">
+      <div className="footer__container">
+        
+        <p className="footer__left">
           ©Sportsee Tous droits réservés
         </p>
 
-        <div className="site-footer__nav">
-          <a href="#" className="site-footer__link">
-            Conditions générales
-          </a>
-          <a href="#" className="site-footer__link">
-            Contact
-          </a>
-          <img
-            src={footerMark}
-            alt=""
-            aria-hidden="true"
-            className="site-footer__mark"
-          />
+        <div className="footer__right">
+          <a href="#">Conditions générales</a>
+          <a href="#">Contact</a>
+          <img src="/Icon-logo.png" alt="logo" className="footer__logo" />
         </div>
+
       </div>
     </footer>
   );

@@ -1,0 +1,146 @@
+.profile-banner {
+  --profile-banner-glow: 243, 243, 251;
+  width: 100%;
+  max-width: 1027px;
+  margin: 44px auto 0;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 26px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  box-shadow: 0 18px 40px rgba(var(--profile-banner-glow), 0.9);
+}
+
+.profile-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(var(--profile-banner-glow), 0.22) 72%,
+    rgba(var(--profile-banner-glow), 0.64) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-banner::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -52px;
+  height: 128px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--profile-banner-glow), 0.96) 0%,
+    rgba(var(--profile-banner-glow), 0.74) 42%,
+    rgba(var(--profile-banner-glow), 0) 80%
+  );
+  filter: blur(20px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.profile-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-banner__left {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.profile-banner__image {
+  width: 78px;
+  height: 78px;
+  border-radius: 14px;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-banner__infos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-banner__name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111111;
+}
+
+.profile-banner__member {
+  margin: 0;
+  font-size: 13px;
+  color: #7a7a7a;
+}
+
+.profile-banner__right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-banner__label {
+  margin: 0;
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+.profile-banner__distance-card {
+  min-width: 130px;
+  height: 62px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: #1738ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-banner__distance-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.profile-banner__distance-card:hover .profile-banner__distance-content {
+  opacity: 0.7;
+  transform: translateY(-2px);
+}
+
+.profile-banner__distance-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.profile-banner__distance-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .profile-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-banner__right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

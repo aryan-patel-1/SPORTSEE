@@ -1,22 +1,39 @@
-// Enregistre le token après la connexion
+// sauvegarde le token après connexion
 export function saveToken(token: string) {
+  // vérifie qu'on est côté navigateur
   if (typeof window !== "undefined") {
-    localStorage.setItem("token", token);
+    // stocke le token dans le sessionStorage
+    sessionStorage.setItem("token", token);
   }
 }
 
-// Relit le token stocké dans le navigateur
+// récupère le token pour les requêtes API
 export function getToken() {
+  // si on est côté serveur, on ne peut pas accéder au storage
   if (typeof window === "undefined") {
     return null;
   }
 
-  return localStorage.getItem("token");
+  // retourne le token stocké
+  return sessionStorage.getItem("token");
 }
 
-// Supprime le token lors de la déconnexion
+// supprime le token lors de la déconnexion
 export function removeToken() {
+  // vérifie qu'on est côté navigateur
   if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
+    // supprime le token
+    sessionStorage.removeItem("token");
   }
+}
+
+// vérifie si l'utilisateur est connecté
+export function isAuthenticated() {
+  // si côté serveur → pas connecté
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  // retourne true si un token existe
+  return !!sessionStorage.getItem("token");
 }
