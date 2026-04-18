@@ -1,45 +1,26 @@
-import { Link } from "react-router";
-import logo from "../img/Logo.png";
-import backgroundPicture from "../img/Background_picture_sportsee.png";
+import Header from "../components/Header";
+import "../css/not-found.css";
 
 export default function NotFound() {
   return (
-    <main className="login-page">
-      {/* Colonne gauche: message d'erreur */}
-      <section className="login-page__panel">
-        <img
-          src={logo}
-          alt="Logo Sportsee"
-          className="login-page__logo"
-        />
+    <>
+      <Header />
 
-        <div className="login-page__card">
-          <p className="login-page__eyebrow">Oups !</p>
-          <h1 className="login-page__title">Page introuvable</h1>
-          <p className="login-page__subtitle">Erreur 404</p>
+      <main className="not-found-page">
+        <section className="not-found-page__content">
+          <img
+            src="/Logo.png"
+            alt="Logo SportSee"
+            className="not-found-page__logo"
+          />
 
-          <p className="login-page__description">
-            La page que vous cherchez n'existe pas ou a été déplacée.
+          <h1 className="not-found-page__title">404</h1>
+
+          <p className="not-found-page__text">
+            Oups, la page demandée est introuvable.
           </p>
-
-          <Link to="/" className="not-found__link">
-            Retour à l'accueil
-          </Link>
-        </div>
-      </section>
-
-      {/* Colonne droite */}
-      <section className="login-page__visual" aria-hidden="true">
-        <img
-          src={backgroundPicture}
-          alt=""
-          className="login-page__image"
-        />
-        <div className="login-page__badge">
-          Analysez vos performances en un clin d'œil, suivez vos progrès
-          et atteignez vos objectifs.
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </>
   );
 }
