@@ -15,6 +15,7 @@ import {
 } from "../../utils/activity";
 import "../../css/distance-card.css";
 
+// nombre de semaines affichées par page
 const WEEKS_PER_PAGE = 4;
 
 type DistanceCardProps = {
@@ -33,29 +34,28 @@ type DistanceTooltipProps = {
   }>;
 };
 
-// Divise les données en pages de 4 semaines.
-// La première page peut contenir moins de 4 semaines si le total n'est pas un multiple de 4.
+// découpe les données en pages de 4 semaines
+
 function buildWeekPages(runningData: WeeklyDistancePoint[]) {
   if (runningData.length === 0) return [[]];
 
   const pages: WeeklyDistancePoint[][] = [];
-  const remainder = runningData.length % WEEKS_PER_PAGE;
-  let cursor = 0;
+  // taille de la première page (0 si total déjà multiple de WEEKS_PER_PAGE)
+  const offset = runningData.length % WEEKS_PER_PAGE;
 
-  if (remainder > 0) {
-    pages.push(runningData.slice(0, remainder));
-    cursor = remainder;
+  if (offset > 0) {
+    pages.push(runningData.slice(0, offset));
   }
 
-  while (cursor < runningData.length) {
-    pages.push(runningData.slice(cursor, cursor + WEEKS_PER_PAGE));
-    cursor += WEEKS_PER_PAGE;
+  // découpage régulier du reste en blocs pleins
+  for (let i = offset; i < runningData.length; i += WEEKS_PER_PAGE) {
+    pages.push(runningData.slice(i, i + WEEKS_PER_PAGE));
   }
 
   return pages;
 }
 
-// Défini en dehors du composant pour éviter une recréation à chaque render.
+// tooltip personnalisé, défini en dehors pour éviter une recréation à chaque render
 function CustomTooltip({ active, payload }: DistanceTooltipProps) {
   if (!active || !payload?.length) return null;
 
@@ -67,30 +67,37 @@ function CustomTooltip({ active, payload }: DistanceTooltipProps) {
         {formatTooltipActivityPeriod(startDate, endDate)}
       </p>
       <p className="distance-card__tooltip-value">
+        {/* format français, virgule à la place du point */}
         {distance.toFixed(1).replace(".", ",")} km
       </p>
     </div>
   );
 }
 
+// carte de la distance hebdomadaire avec navigation par pages
 export default function DistanceCard({ runningData }: DistanceCardProps) {
   const weekPages = buildWeekPages(runningData);
   const pageCount = weekPages.length;
+
+  // on ouvre sur la dernière page (semaines les plus récentes)
   const [pageIndex, setPageIndex] = useState(Math.max(pageCount - 1, 0));
 
-  // Synchronise la page courante quand les données changent.
+  // resynchronise la page si les données changent
   useEffect(() => {
     setPageIndex(Math.max(pageCount - 1, 0));
   }, [pageCount]);
 
+  // on ajoute un label S1, S2... pour l'axe X
   const chartData = weekPages[pageIndex].map((week, index) => ({
     ...week,
     week: `S${index + 1}`,
   }));
 
+  // moyenne affichée dans le titre
   const totalDistance = chartData.reduce((total, item) => total + item.distance, 0);
   const averageDistance = chartData.length ? totalDistance / chartData.length : 0;
 
+  // période visible dans l'en-tête
   const startDate = chartData[0]?.startDate;
   const endDate = chartData[chartData.length - 1]?.endDate;
   const period = startDate && endDate ? formatActivityPeriod(startDate, endDate) : "Aucune donnée";
@@ -110,6 +117,7 @@ export default function DistanceCard({ runningData }: DistanceCardProps) {
           </p>
         </div>
 
+        {/* contrôles de pagination */}
         <div className="distance-card__period">
           <button
             type="button"
@@ -140,6 +148,7 @@ export default function DistanceCard({ runningData }: DistanceCardProps) {
             <XAxis dataKey="week" tickLine={false} axisLine={false} />
             <YAxis tickLine={false} axisLine={false} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: "transparent" }} />
+            {/* activeBar change la couleur de la barre survolée */}
             <Bar
               dataKey="distance"
               fill="#aeb4ff"

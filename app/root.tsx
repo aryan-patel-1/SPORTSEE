@@ -8,6 +8,9 @@ import {
 import "./app.css";
 import { UserProvider } from "./context/UserContext";
 import Footer from "./components/Footer";
+
+// point d'entrée de l'app, toutes les routes sont rendues à travers <Outlet />
+// UserProvider rend le contexte utilisateur disponible sur toutes les pages
 export default function App() {
   return (
     <UserProvider>
@@ -15,6 +18,10 @@ export default function App() {
     </UserProvider>
   );
 }
+
+// layout HTML commun à toutes les routes
+// Meta et Links permettent aux routes de définir leur propre <head>
+// ScrollRestoration remet le scroll en haut lors d'un changement de page
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">

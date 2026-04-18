@@ -1,40 +1,9 @@
-export type UserProfile = {
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-  age: number;
-  weight: number;
-  height: number;
-  profilePicture: string;
-};
+import type { UserActivity } from "../utils/activity";
 
-export type UserStatistics = {
-  totalDistance: number;
-  totalSessions: number;
-  totalDuration: number;
-};
-
-export type HeartRate = {
-  min: number;
-  max: number;
-  average: number;
-};
-
-export type UserActivity = {
-  date: string;
-  distance: number;
-  duration: number;
-  heartRate: HeartRate;
-  caloriesBurned: number;
-};
-
-export const mockUserInfo: {
-  profile: UserProfile;
-  statistics: UserStatistics;
-} = {
+export const mockUserInfo = {
   profile: {
-    firstName: "Ines",
-    lastName: "Dubois",
+    firstName: "Sophie",
+    lastName: "Martin",
     createdAt: "2025-02-10",
     age: 28,
     weight: 72,

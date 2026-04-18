@@ -17,13 +17,16 @@ import {
 } from "../../utils/activity";
 import "../../css/bpm-card.css";
 
+// nombre d'activités affichées par page du graphique
 const ACTIVITIES_PER_PAGE = 7;
+// libellés des jours affichés sous le graphique
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
 type BpmCardProps = {
   data: UserActivity[];
 };
 
+// type du tooltip passé à Recharts
 type BpmTooltipProps = {
   active?: boolean;
   payload?: Array<{
@@ -36,7 +39,8 @@ type BpmTooltipProps = {
   }>;
 };
 
-// Défini en dehors du composant pour éviter une recréation à chaque render.
+// tooltip personnalisé qui remplace celui par défaut de Recharts
+// défini en dehors du composant pour éviter de le recréer à chaque render
 function CustomBpmTooltip({ active, payload }: BpmTooltipProps) {
   if (!active || !payload?.length) return null;
 
@@ -52,20 +56,28 @@ function CustomBpmTooltip({ active, payload }: BpmTooltipProps) {
   );
 }
 
+// carte des fréquences cardiaques, barres min/max et ligne de moyenne
 export default function BpmCard({ data }: BpmCardProps) {
+  // on trie les activités par date avant d'afficher
   const sortedActivities = sortActivitiesByDate(data);
+
+  // nombre de pages, toujours au moins 1
   const pageCount = Math.max(1, Math.ceil(sortedActivities.length / ACTIVITIES_PER_PAGE));
+
+  // on ouvre par défaut sur la dernière page (données récentes)
   const [pageIndex, setPageIndex] = useState(Math.max(pageCount - 1, 0));
   const [isChartHovered, setIsChartHovered] = useState(false);
 
-  // Synchronise la page courante quand les données changent.
+  // si le nombre de pages change on repositionne sur la dernière
   useEffect(() => {
     setPageIndex(Math.max(pageCount - 1, 0));
   }, [pageCount]);
 
+  // activités visibles de la page courante
   const pageStart = pageIndex * ACTIVITIES_PER_PAGE;
   const visibleActivities = sortedActivities.slice(pageStart, pageStart + ACTIVITIES_PER_PAGE);
 
+  // on formate les données pour Recharts
   const bpmChartData = visibleActivities.map((activity, index) => ({
     day: DAY_LABELS[index % DAY_LABELS.length],
     min: activity.heartRate.min,
@@ -74,15 +86,18 @@ export default function BpmCard({ data }: BpmCardProps) {
     date: activity.date,
   }));
 
+  // moyenne des bpm moyens affichée dans le titre
   const averageBpm =
     bpmChartData.length > 0
       ? bpmChartData.reduce((total, item) => total + item.average, 0) / bpmChartData.length
       : 0;
 
+  // période affichée dans l'en-tête
   const startDate = bpmChartData[0]?.date;
   const endDate = bpmChartData[bpmChartData.length - 1]?.date;
   const period = startDate && endDate ? formatActivityPeriod(startDate, endDate) : "Aucune donnée";
 
+  // désactive les flèches aux extrémités
   const canGoToPreviousPage = pageIndex > 0;
   const canGoToNextPage = pageIndex < pageCount - 1;
 
@@ -94,6 +109,7 @@ export default function BpmCard({ data }: BpmCardProps) {
           <p className="bpm-card__subtitle">Fréquence cardiaque moyenne</p>
         </div>
 
+        {/* flèches de pagination + période visible */}
         <div className="bpm-card__period">
           <button
             type="button"
@@ -118,6 +134,7 @@ export default function BpmCard({ data }: BpmCardProps) {
       </div>
 
       <div className="bpm-card__chart">
+        {/* adapte la taille du graphique au parent */}
         <ResponsiveContainer width="100%" height={290}>
           <ComposedChart
             data={bpmChartData}
@@ -127,6 +144,7 @@ export default function BpmCard({ data }: BpmCardProps) {
           >
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#e7e7e7" />
             <XAxis dataKey="day" tickLine={false} axisLine={false} />
+            {/* axe Y fixé pour garder la même échelle entre les pages */}
             <YAxis
               domain={[130, 187]}
               ticks={[130, 145, 160, 187]}
@@ -134,6 +152,8 @@ export default function BpmCard({ data }: BpmCardProps) {
               axisLine={false}
             />
             <Tooltip content={<CustomBpmTooltip />} cursor={{ fill: "transparent" }} />
+
+            {/* barre du bpm minimum */}
             <Bar
               dataKey="min"
               fill="#f3b8ac"
@@ -141,6 +161,7 @@ export default function BpmCard({ data }: BpmCardProps) {
               barSize={14}
               isAnimationActive={false}
             />
+            {/* barre du bpm maximum */}
             <Bar
               dataKey="max"
               fill="#ff3b0a"
@@ -148,6 +169,7 @@ export default function BpmCard({ data }: BpmCardProps) {
               barSize={14}
               isAnimationActive={false}
             />
+            {/* ligne de la moyenne, change de couleur au survol */}
             <Line
               type="monotone"
               dataKey="average"
@@ -161,6 +183,7 @@ export default function BpmCard({ data }: BpmCardProps) {
         </ResponsiveContainer>
       </div>
 
+      {/* légende affichée sous le graphique */}
       <div className="bpm-card__legend">
         <div className="bpm-card__legend-item">
           <span className="bpm-card__dot bpm-card__dot--min" />

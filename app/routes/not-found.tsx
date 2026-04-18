@@ -1,6 +1,7 @@
 import Header from "../components/Header";
 import "../css/not-found.css";
 
+// page 404 affichée par la route catch-all "*" pour toute URL inconnue
 export default function NotFound() {
   return (
     <>

@@ -8,28 +8,43 @@ import "../../css/weekly-stats.css";
 
 type WeeklyStatsProps = {
   data: UserActivity[];
+  // objectif hebdomadaire défini côté profil
   goal: number;
 };
 
+// ajoute le 's' du pluriel français au libellé si count >= 2
+function pluralize(count: number, label: string) {
+  return `${count} ${label}${count > 1 ? "s" : ""}`;
+}
+
+// bloc "cette semaine" avec donut de progression et totaux
 export default function WeeklyStats({ data, goal }: WeeklyStatsProps) {
+  // on ne garde que les activités de la semaine la plus récente
+  // (même si data contient plusieurs mois d'historique)
   const latestWeekActivities = getLatestWeekActivities(data);
 
   const completed = latestWeekActivities.length;
+  // Math.max évite un nombre négatif quand l'utilisateur dépasse son objectif
   const remaining = Math.max(0, goal - completed);
-  const completedLabel = `${completed} réalisée${completed > 1 ? "s" : ""}`;
-  const remainingLabel = `${remaining} restante${remaining > 1 ? "s" : ""}`;
 
-  // Données du graphique : part réalisée vs part restante.
+  const completedLabel = pluralize(completed, "réalisée");
+  const remainingLabel = pluralize(remaining, "restante");
+
+  // deux parts du donut : bleu = fait, gris = restant
+  // Recharts dessine les segments dans l'ordre du tableau
   const chartData = [
     { name: "réalisées", value: completed, fill: "#1f38ff" },
     { name: "restantes", value: remaining, fill: "#d6d9f5" },
   ];
 
+  // totaux sur la semaine en cours (durée en minutes, distance en km)
   const totalDuration = latestWeekActivities.reduce((acc, item) => acc + item.duration, 0);
   const totalDistance = latestWeekActivities.reduce((acc, item) => acc + item.distance, 0);
 
+  // période affichée dans l'en-tête, ex "Du 12 févr - 18 févr"
+  // les activités sont déjà triées par getLatestWeekActivities
   const startDate = latestWeekActivities[0]?.date;
-  const endDate = latestWeekActivities[latestWeekActivities.length - 1]?.date;
+  const endDate = latestWeekActivities.at(-1)?.date;
   const period =
     startDate && endDate
       ? `Du ${formatActivityPeriod(startDate, endDate)}`
@@ -53,16 +68,17 @@ export default function WeeklyStats({ data, goal }: WeeklyStatsProps) {
             <div className="weekly__chart">
               <ResponsiveContainer width={220} height={220}>
                 <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="value"
-                  innerRadius={48}
-                  outerRadius={82}
-                  startAngle={0}
-                  endAngle={-360}
-                  stroke="none"
-                  isAnimationActive={false}
-                />
+                  {/* angle négatif pour tourner dans le sens anti-horaire */}
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    innerRadius={48}
+                    outerRadius={82}
+                    startAngle={0}
+                    endAngle={-360}
+                    stroke="none"
+                    isAnimationActive={false}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -79,6 +95,7 @@ export default function WeeklyStats({ data, goal }: WeeklyStatsProps) {
           </div>
         </div>
 
+        {/* cartes latérales avec les totaux durée et distance */}
         <div className="weekly__right">
           <div className="weekly__mini">
             <p>Durée d'activité</p>

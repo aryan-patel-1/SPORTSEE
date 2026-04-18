@@ -1,9 +1,9 @@
 import { normalizeActivityResponse } from "../utils/activity";
 
+// url de base de l'API backend
 const API_URL = "http://localhost:8000/api";
 
-// Effectue une requête authentifiée vers l'API et retourne les données JSON.
-// Lance une erreur si la réponse n'est pas OK.
+// fait un appel API avec le token d'authentification et renvoie le JSON
 async function apiFetch(url: string, token: string) {
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
@@ -16,13 +16,12 @@ async function apiFetch(url: string, token: string) {
   return response.json();
 }
 
-// Convertit une valeur en nombre si elle est définie, sinon retourne undefined.
+// convertit une valeur en nombre si elle existe, sinon renvoie undefined
 function toOptionalNumber(value: unknown) {
   return value != null ? Number(value) : undefined;
 }
 
-// Normalise le genre reçu de l'API vers "male" ou "female".
-// L'API peut retourner différentes valeurs selon la langue ou le format.
+// uniformise la valeur du genre reçu par l'API en "male" ou "female"
 function normalizeGender(gender: unknown) {
   if (typeof gender !== "string") return null;
 
@@ -34,7 +33,7 @@ function normalizeGender(gender: unknown) {
   return null;
 }
 
-// Convertit les champs numériques des statistiques qui peuvent arriver en string.
+// force les champs numériques des stats en type number
 function normalizeStatistics(stats: any) {
   return {
     ...stats,
@@ -44,8 +43,8 @@ function normalizeStatistics(stats: any) {
   };
 }
 
-// Normalise les données utilisateur pour avoir une structure cohérente côté front.
-// L'API peut retourner les infos dans "profile" ou "userInfos" selon la version.
+// harmonise la structure du user pour le front
+// l'API peut renvoyer les infos dans "profile" ou "userInfos" selon la version
 function normalizeUserInfo(data: any) {
   const profileSource = data?.profile ?? {};
   const userInfosSource = data?.userInfos ?? {};
@@ -63,7 +62,7 @@ function normalizeUserInfo(data: any) {
   };
 }
 
-// Connecte l'utilisateur avec ses identifiants.
+// connecte l'utilisateur avec ses identifiants
 export async function loginUser(username: string, password: string) {
   const response = await fetch(`${API_URL}/login`, {
     method: "POST",
@@ -78,16 +77,19 @@ export async function loginUser(username: string, password: string) {
   return response.json();
 }
 
+// récupère les infos du user connecté
 export async function fetchUserInfo(token: string) {
   const data = await apiFetch(`${API_URL}/user-info`, token);
   return normalizeUserInfo(data);
 }
 
+// récupère l'objectif hebdomadaire du user
 export async function fetchUserGoal(token: string) {
   const data = await apiFetch(`${API_URL}/user-goal`, token);
   return typeof data.goal === "number" ? data.goal : 0;
 }
 
+// récupère les activités du user entre deux dates
 export async function fetchUserActivity(token: string, startWeek: string, endWeek: string) {
   const url = `${API_URL}/user-activity?startWeek=${encodeURIComponent(startWeek)}&endWeek=${encodeURIComponent(endWeek)}`;
   const data = await apiFetch(url, token);

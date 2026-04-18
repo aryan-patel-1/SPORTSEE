@@ -3,58 +3,55 @@ import { useNavigate } from "react-router";
 import { getToken } from "../utils/auth";
 import { UserContext } from "../context/UserContext";
 import { getUserInfo, getUserActivity } from "../services/dataProvider";
-import type { UserActivity } from "../utils/activity";
+import { formatLongActivityDate, type UserActivity } from "../utils/activity";
 import Header from "../components/Header";
 import "../css/profile.css";
 
-function formatJoinDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
+// convertit "male"/"female" en libellé français
 function formatGenderLabel(gender: string | null | undefined) {
   if (gender === "male") return "Homme";
   if (gender === "female") return "Femme";
   return "Non renseigné";
 }
 
+// formate la taille en "1m78"
+
 function formatHeight(height: number | string | null | undefined) {
-  const cm =
-    Number(height) >= 3
-      ? Math.round(Number(height))
-      : Math.round(Number(height) * 100);
+  const value = Number(height);
+  if (!Number.isFinite(value) || value <= 0) return "Non renseignée";
 
-  if (!Number.isFinite(cm) || cm <= 0) return "Non renseignée";
+  // normalisation en cm avant de découper en m + reste
+  const cm = Math.round(value >= 3 ? value : value * 100);
 
+  // on force le reste sur 2 chiffres pour que "1m07" ne devienne pas "1m7"
   return `${Math.floor(cm / 100)}m${String(cm % 100).padStart(2, "0")}`;
 }
 
-// Calcule le nombre de jours sans activité depuis la date d'inscription.
+// calcule le nombre de jours sans activité depuis l'inscription
+// principe : (nb total de jours depuis l'inscription) - (jours avec au moins une activité)
+// les dates sont au format "YYYY-MM-DD" donc on peut comparer directement en string
 function getRestDaysCount(activity: UserActivity[], startWeek: string | null | undefined) {
   if (!startWeek) return 0;
 
-  const today = new Date().toISOString().split("T")[0];
-  const startDate = new Date(`${startWeek}T00:00:00Z`);
-  const endDate = new Date(`${today}T00:00:00Z`);
+  const today = new Date().toISOString().slice(0, 10);
   const oneDayMs = 24 * 60 * 60 * 1000;
 
-  const totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / oneDayMs) + 1;
+  // diff de jours arrondie + 1 pour inclure le jour d'inscription ET aujourd'hui
+  const totalDays =
+    Math.floor((Date.parse(today) - Date.parse(startWeek)) / oneDayMs) + 1;
 
+  // Set sur item.date pour ne compter qu'une fois les jours avec plusieurs séances
   const activeDays = new Set(
     activity
-      .filter((item) => {
-        const d = new Date(`${item.date}T00:00:00Z`);
-        return d >= startDate && d <= endDate;
-      })
+      .filter((item) => item.date >= startWeek && item.date <= today)
       .map((item) => item.date)
   ).size;
 
+  // Math.max protège des cas tordus (date d'inscription dans le futur, etc.)
   return Math.max(0, totalDays - activeDays);
 }
 
+// composant qui affiche une stat avec sa valeur et son unité
 function StatValue({ main, unit }: { main: string; unit: string }) {
   return (
     <p className="profile-stat__value">
@@ -64,6 +61,7 @@ function StatValue({ main, unit }: { main: string; unit: string }) {
   );
 }
 
+// page "mon profil" avec l'identité et les statistiques cumulées
 export default function Profile() {
   const navigate = useNavigate();
   const context = useContext(UserContext);
@@ -73,10 +71,8 @@ export default function Profile() {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [activity, setActivity] = useState<UserActivity[]>([]);
 
-  if (!context) return <p>Erreur de contexte</p>;
-
-  const { setUser } = context;
-
+  // chargement des données
+  // le useEffect reste avant les return conditionnels pour respecter
   useEffect(() => {
     const token = getToken();
 
@@ -90,9 +86,8 @@ export default function Profile() {
         setLoading(true);
         setError(null);
 
-        const authToken: string = token!;
-        const userData = await getUserInfo(authToken);
-        const activityResponse = await getUserActivity(authToken, userData?.profile?.createdAt);
+        const userData = await getUserInfo(token!);
+        const activityResponse = await getUserActivity(token!, userData?.profile?.createdAt);
 
         setUserInfo(userData);
         setActivity(activityResponse.activities);
@@ -107,9 +102,10 @@ export default function Profile() {
   }, [navigate]);
 
   const handleLogout = () => {
-    setUser(null);
+    context?.setUser(null);
   };
 
+  if (!context) return <p>Erreur de contexte</p>;
   if (loading) return <p>Vérification...</p>;
   if (error) return <p>{error}</p>;
   if (!userInfo) return <p>Données indisponibles</p>;
@@ -117,8 +113,8 @@ export default function Profile() {
   const { profile } = userInfo;
   const statistics = userInfo.statistics ?? {};
 
-  // Calcule les totaux d'activité en un seul parcours du tableau.
-  // On préfère les statistiques de l'API quand elles existent, sinon on recalcule depuis les activités.
+  // totaux calculés en un seul parcours du tableau (reduce)
+  // utilisés si l'API ne renvoie pas directement les statistiques globales
   const activityTotals = activity.reduce(
     (acc, item) => ({
       calories: acc.calories + item.caloriesBurned,
@@ -128,12 +124,14 @@ export default function Profile() {
     { calories: 0, distance: 0, duration: 0 }
   );
 
+  // on privilégie les stats de l'API, sinon on bascule sur le recalcul local
   const totalCalories = statistics.totalCalories ?? activityTotals.calories;
   const totalDistance = statistics.totalDistance ?? activityTotals.distance;
   const totalDuration = statistics.totalDuration ?? activityTotals.duration;
   const totalSessions = statistics.totalSessions ?? activity.length;
   const totalRestDays = getRestDaysCount(activity, profile.createdAt);
 
+  // conversion des minutes totales en heures + minutes
   const hours = Math.floor(totalDuration / 60);
   const minutes = totalDuration % 60;
 
@@ -143,6 +141,7 @@ export default function Profile() {
 
       <main className="profile-page">
         <section className="profile-page__grid">
+          {/* colonne gauche, carte d'identité et détails du profil */}
           <div className="profile-page__left">
             <article className="profile-card profile-card--identity">
               <img
@@ -155,7 +154,7 @@ export default function Profile() {
                   {profile.firstName} {profile.lastName}
                 </h1>
                 <p className="profile-card__member">
-                  Membre depuis le {formatJoinDate(profile.createdAt)}
+                  Membre depuis le {formatLongActivityDate(profile.createdAt)}
                 </p>
               </div>
             </article>
@@ -171,11 +170,12 @@ export default function Profile() {
             </article>
           </div>
 
+          {/* colonne droite, grille de statistiques cumulées */}
           <div className="profile-page__right">
             <div className="profile-stats__header">
               <h2 className="profile-stats__title">Vos statistiques</h2>
               <p className="profile-stats__subtitle">
-                depuis le {formatJoinDate(profile.createdAt)}
+                depuis le {formatLongActivityDate(profile.createdAt)}
               </p>
             </div>
 

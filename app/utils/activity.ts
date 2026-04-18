@@ -1,3 +1,4 @@
+// types partagés utilisés dans tout le front
 export type HeartRate = {
   min: number;
   max: number;
@@ -23,346 +24,204 @@ export type UserActivityResponse = {
   runningData: WeeklyDistancePoint[];
 };
 
+// convertit en nombre, renvoie 0 si la valeur est invalide
 function toNumber(value: unknown) {
-  const parsedValue = Number(value);
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function parseActivityDate(dateString: string) {
-  if (dateString.includes("T")) {
-    return new Date(dateString);
-  }
-
-  return new Date(`${dateString}T12:00:00Z`);
+// transforme une chaîne de date en objet Date
+// si la date n'a pas d'heure on force midi UTC pour éviter les décalages de fuseau
+function parseDate(dateString: string) {
+  return new Date(dateString.includes("T") ? dateString : `${dateString}T12:00:00Z`);
 }
 
-function toActivityDateString(value: unknown) {
-  if (typeof value !== "string" || !value.trim()) {
-    return "";
-  }
-
-  const trimmedValue = value.trim();
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
-    return trimmedValue;
-  }
-
-  const parsedDate = new Date(trimmedValue);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "";
-  }
-
-  return parsedDate.toISOString().slice(0, 10);
+// ramène n'importe quelle date au format "YYYY-MM-DD"
+function toDateString(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
 }
 
-function capitalizeLabel(label: string) {
-  if (!label) {
-    return "";
-  }
-
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function shouldShowYearForDate(dateString: string) {
-  return parseActivityDate(dateString).getUTCFullYear() !== new Date().getUTCFullYear();
-}
-
-export function formatShortActivityDate(dateString: string, includeYear?: boolean) {
-  return parseActivityDate(dateString).toLocaleDateString("fr-FR", {
+// date courte en français, ex "12 févr" ou "12 févr 2024"
+function formatShortDate(dateString: string, includeYear?: boolean) {
+  return parseDate(dateString).toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "short",
     year: includeYear ? "numeric" : undefined,
   });
 }
 
+// date longue en français, ex "10 février 2025"
+export function formatLongActivityDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// date complète pour les tooltips, ex "12/02/2025"
 export function formatTooltipActivityDate(dateString: string) {
-  return parseActivityDate(dateString).toLocaleDateString("fr-FR", {
+  return parseDate(dateString).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
 }
 
+// affiche une période "début - fin"
+// l'année n'est ajoutée que si la période sort de l'année en cours
+// (sinon le libellé reste compact, ex "12 févr - 18 févr")
 export function formatActivityPeriod(startDate: string, endDate: string) {
-  const startYear = parseActivityDate(startDate).getUTCFullYear();
-  const endYear = parseActivityDate(endDate).getUTCFullYear();
-  const includeYear =
-    startYear !== endYear ||
-    shouldShowYearForDate(startDate) ||
-    shouldShowYearForDate(endDate);
+  const currentYear = new Date().getUTCFullYear();
+  const startYear = parseDate(startDate).getUTCFullYear();
+  const endYear = parseDate(endDate).getUTCFullYear();
 
-  return `${formatShortActivityDate(startDate, includeYear)} - ${formatShortActivityDate(endDate, includeYear)}`;
+  // si une des deux bornes n'est pas dans l'année en cours, on affiche l'année
+  // (ce test couvre aussi le cas où start et end ne sont pas dans la même année)
+  const includeYear = startYear !== currentYear || endYear !== currentYear;
+
+  return `${formatShortDate(startDate, includeYear)} - ${formatShortDate(endDate, includeYear)}`;
 }
 
+// version tooltip du formatActivityPeriod
 export function formatTooltipActivityPeriod(startDate: string, endDate: string) {
-  if (startDate === endDate) {
-    return formatTooltipActivityDate(startDate);
-  }
-
+  if (startDate === endDate) return formatTooltipActivityDate(startDate);
   return `${formatTooltipActivityDate(startDate)} - ${formatTooltipActivityDate(endDate)}`;
 }
 
-export function formatActivityDayLabel(dateString: string) {
-  const weekdayLabel = parseActivityDate(dateString)
-    .toLocaleDateString("fr-FR", { weekday: "short" })
-    .replace(".", "");
-
-  return capitalizeLabel(weekdayLabel.slice(0, 3));
-}
-
+// trie les activités par date (sans modifier le tableau d'origine)
 export function sortActivitiesByDate(activities: UserActivity[]) {
   return [...activities].sort(
-    (left, right) =>
-      parseActivityDate(left.date).getTime() -
-      parseActivityDate(right.date).getTime()
+    (a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime()
   );
 }
 
-function sortRunningDataByDate(runningData: WeeklyDistancePoint[]) {
-  return [...runningData].sort(
-    (left, right) =>
-      parseActivityDate(left.startDate).getTime() -
-      parseActivityDate(right.startDate).getTime()
-  );
-}
-
-function looksLikeActivityEntry(activity: any) {
-  return Boolean(
-    activity &&
-    typeof activity === "object" &&
-    (activity.heartRate ||
-      activity.heart_rate ||
-      activity.duration != null ||
-      activity.caloriesBurned != null ||
-      activity.calories_burned != null)
-  );
-}
-
-function looksLikeWeeklyDistanceEntry(entry: any) {
-  return Boolean(
-    entry &&
-    typeof entry === "object" &&
-    !looksLikeActivityEntry(entry) &&
-    (
-      entry.startDate ||
-      entry.weekStart ||
-      entry.startWeek ||
-      entry.endDate ||
-      entry.weekEnd ||
-      entry.endWeek ||
-      entry.from ||
-      entry.to
-    )
-  );
-}
-
-function extractActivitiesSource(data: unknown): unknown[] {
-  if (Array.isArray(data)) {
-    return data.some(looksLikeActivityEntry) ? data : [];
-  }
-
-  if (!data || typeof data !== "object") {
-    return [];
-  }
-
-  const source = data as Record<string, unknown>;
-  const candidates = [
-    source.runningData,
-    source.running_data,
-    source.activities,
-    source.activity,
-    source.sessions,
-    source.userActivity,
-    source.activityData,
-    source.data,
-  ];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate) && candidate.some(looksLikeActivityEntry)) {
-      return candidate;
-    }
-  }
-
-  return [];
-}
-
-function extractRunningDataSource(data: unknown): unknown[] {
-  if (!data || typeof data !== "object") {
-    return [];
-  }
-
-  const source = data as Record<string, unknown>;
-  const candidates = [
-    source.runningData,
-    source.running_data,
-    source.weeklyRunningData,
-    source.weeklyDistance,
-    source.weeklyDistanceData,
-  ];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
-      if (!candidate.some(looksLikeWeeklyDistanceEntry)) {
-        continue;
-      }
-
-      return candidate;
-    }
-  }
-
-  return [];
-}
-
+// renvoie la date du lundi de la semaine qui contient la date donnée
+// sert d'identifiant stable pour regrouper les activités par semaine
 function getWeekKey(dateString: string) {
-  const date = parseActivityDate(dateString);
-  const dayOfWeek = date.getUTCDay();
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const date = parseDate(dateString);
 
+  // getUTCDay : dimanche = 0, lundi = 1, ..., samedi = 6
+  const dayOfWeek = date.getUTCDay();
+
+  // décalage à appliquer pour atterrir sur le lundi de la même semaine :
+  //   - dimanche (0) => recule de 6 jours pour rejoindre le lundi précédent
+  //   - les autres jours => 1 - dayOfWeek (ex mercredi = 3 => -2 jours)
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   date.setUTCDate(date.getUTCDate() + diffToMonday);
 
   return date.toISOString().slice(0, 10);
 }
 
+// renvoie uniquement les activités de la semaine la plus récente
 export function getLatestWeekActivities(activities: UserActivity[]) {
-  const sortedActivities = sortActivitiesByDate(activities);
-  const latestActivity = sortedActivities[sortedActivities.length - 1];
+  const sorted = sortActivitiesByDate(activities);
+  const latest = sorted.at(-1);
+  if (!latest) return [];
+  const key = getWeekKey(latest.date);
+  return sorted.filter((a) => getWeekKey(a.date) === key);
+}
 
-  if (!latestActivity) {
-    return [];
-  }
-
-  const latestWeekKey = getWeekKey(latestActivity.date);
-
-  return sortedActivities.filter(
-    (activity) => getWeekKey(activity.date) === latestWeekKey
+// détecte si un objet ressemble à une activité ponctuelle
+function looksLikeActivityEntry(entry: any) {
+  return Boolean(
+    entry &&
+    typeof entry === "object" &&
+    (entry.heartRate ||
+      entry.heart_rate ||
+      entry.duration != null ||
+      entry.caloriesBurned != null ||
+      entry.calories_burned != null)
   );
 }
 
-export function normalizeActivities(data: unknown): UserActivity[] {
-  const activitiesSource = extractActivitiesSource(data);
-
-  if (!Array.isArray(activitiesSource)) {
-    return [];
+// cherche le tableau d'activités dans la réponse API quelle que soit sa forme
+function extractActivitiesSource(data: unknown): unknown[] {
+  if (Array.isArray(data)) {
+    return data.some(looksLikeActivityEntry) ? data : [];
   }
+  if (!data || typeof data !== "object") return [];
 
-  const normalizedActivities = activitiesSource
-    .map((activity: any) => ({
-      date: toActivityDateString(
-        activity?.date ??
-        activity?.sessionDate ??
-        activity?.performedAt
-      ),
-      distance: toNumber(
-        activity?.distance ??
-        activity?.totalDistance ??
-        activity?.km
-      ),
-      duration: toNumber(activity?.duration),
-      heartRate: {
-        min: toNumber(
-          activity?.heartRate?.min ??
-          activity?.heart_rate?.min ??
-          activity?.minBpm ??
-          activity?.min_bpm
-        ),
-        max: toNumber(
-          activity?.heartRate?.max ??
-          activity?.heart_rate?.max ??
-          activity?.maxBpm ??
-          activity?.max_bpm
-        ),
-        average: toNumber(
-          activity?.heartRate?.average ??
-          activity?.heart_rate?.average ??
-          activity?.averageBpm ??
-          activity?.average_bpm
-        ),
-      },
-      caloriesBurned: toNumber(
-        activity?.caloriesBurned ??
-        activity?.calories_burned
-      ),
-    }))
-    .filter((activity) => activity.date);
+  const source = data as Record<string, unknown>;
+  // on essaie plusieurs clés possibles selon la version de l'API
+  const keys = [
+    "runningData", "running_data", "activities", "activity",
+    "sessions", "userActivity", "activityData", "data",
+  ];
 
-  return sortActivitiesByDate(normalizedActivities);
+  for (const key of keys) {
+    const candidate = source[key];
+    if (Array.isArray(candidate) && candidate.some(looksLikeActivityEntry)) {
+      return candidate;
+    }
+  }
+  return [];
 }
 
-export function normalizeRunningData(data: unknown): WeeklyDistancePoint[] {
-  const runningDataSource = extractRunningDataSource(data);
-
-  if (!Array.isArray(runningDataSource)) {
-    return [];
-  }
-
-  const normalizedRunningData = runningDataSource
-    .map((item: any) => {
-      const startDate = toActivityDateString(
-        item?.startDate ??
-        item?.weekStart ??
-        item?.startWeek ??
-        item?.from
-      );
-      const endDate = toActivityDateString(
-        item?.endDate ??
-        item?.weekEnd ??
-        item?.endWeek ??
-        item?.to ??
-        startDate
-      );
-
+// convertit une liste d'activités brutes en structure UserActivity
+// gère les différents noms de champs possibles (camelCase / snake_case)
+function normalizeActivities(data: unknown): UserActivity[] {
+  const normalized = extractActivitiesSource(data)
+    .map((a: any) => {
+      const hr = a?.heartRate ?? a?.heart_rate ?? {};
       return {
-        distance: toNumber(
-          item?.distance ??
-          item?.totalDistance ??
-          item?.km ??
-          item?.kilometers
-        ),
-        startDate,
-        endDate: endDate || startDate,
+        date: toDateString(a?.date ?? a?.sessionDate ?? a?.performedAt),
+        distance: toNumber(a?.distance ?? a?.totalDistance ?? a?.km),
+        duration: toNumber(a?.duration),
+        heartRate: {
+          min: toNumber(hr.min ?? a?.minBpm ?? a?.min_bpm),
+          max: toNumber(hr.max ?? a?.maxBpm ?? a?.max_bpm),
+          average: toNumber(hr.average ?? a?.averageBpm ?? a?.average_bpm),
+        },
+        caloriesBurned: toNumber(a?.caloriesBurned ?? a?.calories_burned),
       };
     })
-    .filter((item) => item.startDate);
+    // on retire les activités sans date valide
+    .filter((a) => a.date);
 
-  return sortRunningDataByDate(normalizedRunningData);
+  return sortActivitiesByDate(normalized);
 }
 
+// regroupe les activités quotidiennes par semaine pour calculer la distance totale
+// renvoie une ligne par semaine avec la distance cumulée et les bornes effectives
 export function getWeeklyDistanceData(activities: UserActivity[]): WeeklyDistancePoint[] {
-  const weeklyData = new Map<
-    string,
-    { distance: number; startDate: string; endDate: string }
-  >();
+  // Map clé = lundi de la semaine, valeur = ligne en cours de construction
+  const weeks = new Map<string, WeeklyDistancePoint>();
 
+  // on parcourt les activités triées pour que startDate / endDate restent cohérents
   for (const activity of sortActivitiesByDate(activities)) {
-    const weekKey = getWeekKey(activity.date);
-    const currentWeek = weeklyData.get(weekKey);
+    const key = getWeekKey(activity.date);
+    const week = weeks.get(key);
 
-    if (!currentWeek) {
-      weeklyData.set(weekKey, {
+    if (!week) {
+      // première activité de la semaine : on initialise la ligne
+      // startDate et endDate pointent vers cette unique activité
+      weeks.set(key, {
         distance: activity.distance,
         startDate: activity.date,
         endDate: activity.date,
       });
-      continue;
+    } else {
+      // semaine déjà commencée : on cumule la distance et on étend la borne de fin
+      // (les activités étant triées, l'endDate se met à jour naturellement)
+      week.distance += activity.distance;
+      week.endDate = activity.date;
     }
-
-    currentWeek.distance += activity.distance;
-    currentWeek.endDate = activity.date;
   }
 
-  return Array.from(weeklyData.values()).map((week) => ({
-    distance: Number(week.distance.toFixed(1)),
-    startDate: week.startDate,
-    endDate: week.endDate,
+  // arrondi final à 1 décimale pour éviter les flottants type 12.300000000000004
+  return Array.from(weeks.values()).map((w) => ({
+    ...w,
+    distance: Number(w.distance.toFixed(1)),
   }));
 }
 
+// point d'entrée utilisé par le service API, renvoie les activités et le cumul hebdo
 export function normalizeActivityResponse(data: unknown): UserActivityResponse {
   const activities = normalizeActivities(data);
-
-  return {
-    activities,
-    runningData: getWeeklyDistanceData(activities),
-  };
+  return { activities, runningData: getWeeklyDistanceData(activities) };
 }

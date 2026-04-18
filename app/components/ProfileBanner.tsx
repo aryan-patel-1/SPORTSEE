@@ -1,6 +1,7 @@
+import { formatLongActivityDate } from "../utils/activity";
 import "../css/profile-banner.css";
 
-// type des données reçues par le composant
+// type des données affichées par la bannière
 type ProfileBannerProps = {
   data: {
     profile: {
@@ -15,23 +16,13 @@ type ProfileBannerProps = {
   };
 };
 
-// fonction pour formater la date en français
-function formatJoinDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-// composant bannière du profil
+// bannière du haut du dashboard avec photo, nom et distance totale
 export default function ProfileBanner({ data }: ProfileBannerProps) {
-  // on récupère les infos du profil et les statistiques
   const { profile, statistics } = data;
 
   return (
     <section className="profile-banner profile-banner--animated">
+      {/* partie gauche, photo et identité */}
       <div className="profile-banner__left">
         <img
           src={profile.profilePicture}
@@ -43,14 +34,13 @@ export default function ProfileBanner({ data }: ProfileBannerProps) {
             {profile.firstName} {profile.lastName}
           </h2>
 
-          {/* date d'inscription */}
           <p className="profile-banner__member">
-            Membre depuis le {formatJoinDate(profile.createdAt)}
+            Membre depuis le {formatLongActivityDate(profile.createdAt)}
           </p>
         </div>
       </div>
 
-      {/* partie droite : statistique principale */}
+      {/* partie droite, distance totale mise en avant */}
       <div className="profile-banner__right">
         <p className="profile-banner__label">Distance totale parcourue</p>
 
@@ -62,7 +52,7 @@ export default function ProfileBanner({ data }: ProfileBannerProps) {
               className="profile-banner__distance-icon"
             />
 
-            {/* affichage de la distance totale arrondie */}
+            {/* on arrondit pour ne pas afficher de décimales */}
             <span className="profile-banner__distance-value">
               {Math.round(statistics.totalDistance)} km
             </span>

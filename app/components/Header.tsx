@@ -3,17 +3,20 @@ import { removeToken } from "../utils/auth";
 import "../css/header.css";
 
 type HeaderProps = {
+  // callback appelé par la page parente lors du clic sur déconnexion
   onLogout?: () => void;
 };
 
+// en-tête commun aux pages authentifiées
 export default function Header({ onLogout }: HeaderProps) {
   const navigate = useNavigate();
 
+  // supprime le token puis redirige vers la page de connexion
   const handleLogout = () => {
     removeToken();
-    if (onLogout) {
-      onLogout();
-    }
+    onLogout?.();
+
+    // replace évite d'empiler la page dans l'historique
     navigate("/", { replace: true, viewTransition: true });
   };
 
@@ -23,7 +26,9 @@ export default function Header({ onLogout }: HeaderProps) {
         <Link to="/dashboard" className="header__logo" viewTransition>
           <img src="/logo.png" alt="Logo SportSee" className="header__logo-img" />
         </Link>
+
         <nav className="header__nav">
+          {/* NavLink ajoute une classe active selon l'URL courante */}
           <NavLink
             to="/dashboard"
             end
@@ -43,6 +48,7 @@ export default function Header({ onLogout }: HeaderProps) {
           >
             Mon profil
           </NavLink>
+
           <button type="button" className="header__logout" onClick={handleLogout}>
             Se déconnecter
           </button>

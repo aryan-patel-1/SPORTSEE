@@ -1,17 +1,23 @@
 import { createContext, useState } from "react";
+
+// infos minimales stockées en mémoire pour l'utilisateur connecté
+// null = aucun utilisateur
 type UserType = {
   username: string;
   userId: string;
 } | null;
+
+// valeur exposée par le contexte, avec un setter pour mettre à jour le user
 type UserContextType = {
   user: UserType;
   setUser: React.Dispatch<React.SetStateAction<UserType>>;
 };
-/*Création du contexte global Il permettra de partager les données utilisateur dans toute l'application */
+
+// contexte global, permet de partager le user sans passer par les props
 export const UserContext = createContext<UserContextType | null>(null);
-/* Provider = rend les données accessibles partout */
+
+// provider à placer en haut de l'app pour rendre le user accessible partout
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  /*On stocke uniquement les données essentielles */
   const [user, setUser] = useState<UserType>(null);
 
   return (

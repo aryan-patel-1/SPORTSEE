@@ -1,49 +1,55 @@
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router";
 import { saveToken } from "../utils/auth";
+import { loginUser } from "../services/api";
 import { UserContext } from "../context/UserContext";
 import "../css/login.css";
 
+// page de connexion affichée sur la route "/"
 export default function Login() {
+  // états du formulaire et du cycle de connexion
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
   const context = useContext(UserContext);
+
   if (!context) {
     return <p>Erreur de contexte</p>;
   }
   const { setUser } = context;
+
+  // envoi du formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
     try {
-      const response = await fetch("http://localhost:8000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await response.json();
+      // loginUser est centralisé dans services/api.ts pour éviter de dupliquer
+      // l'URL et la logique fetch
+      const data = await loginUser(username, password);
+
       if (data.token) {
+        // on sauvegarde le token et on met à jour le contexte user
         saveToken(data.token);
         setUser({
-          username: username,
+          username,
           userId: data.userId,
         });
         navigate("/dashboard");
       } else {
         setError("Identifiants incorrects");
       }
-    } catch (error) {
-      setError("Erreur serveur");
+    } catch {
+      setError("Identifiants incorrects ou erreur serveur");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <main className="login-page">
       <section className="login-page__left">
@@ -66,7 +72,6 @@ export default function Login() {
               <input
                 id="username"
                 type="text"
-                placeholder=""
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
@@ -78,13 +83,13 @@ export default function Login() {
               <input
                 id="password"
                 type="password"
-                placeholder=""
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
               />
             </div>
 
+            {/* bouton désactivé pendant la requête pour éviter les doubles envois */}
             <button className="login-form__button" type="submit" disabled={loading}>
               {loading ? "Connexion..." : "Se connecter"}
             </button>
@@ -92,6 +97,7 @@ export default function Login() {
 
           <p className="login-card__forgot">Mot de passe oublié ?</p>
 
+          {/* message d'erreur uniquement si renseigné */}
           {error && <p className="login-card__error">{error}</p>}
         </div>
       </section>
