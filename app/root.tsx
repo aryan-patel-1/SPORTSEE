@@ -4,6 +4,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 import "./app.css";
 import { UserProvider } from "./context/UserContext";
@@ -12,9 +13,13 @@ import Footer from "./components/Footer";
 // point d'entrée de l'app, toutes les routes sont rendues à travers <Outlet />
 // UserProvider rend le contexte utilisateur disponible sur toutes les pages
 export default function App() {
+  const location = useLocation();
+
   return (
     <UserProvider>
-      <Outlet />
+      <div key={location.pathname} className="route-content">
+        <Outlet />
+      </div>
     </UserProvider>
   );
 }
@@ -32,8 +37,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
-        <Footer />
+        <div className="app-shell">
+          {children}
+          <Footer />
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>

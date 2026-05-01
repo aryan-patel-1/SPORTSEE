@@ -9,21 +9,11 @@ import {
   Line,
   ComposedChart,
 } from "recharts";
-import {
-  formatActivityPeriod,
-  formatTooltipActivityDate,
-  sortActivitiesByDate,
-  type UserActivity,
-} from "../../utils/activity";
+import type { BpmPage } from "../../utils/viewModels";
 import "../../css/bpm-card.css";
 
-// nombre d'activités affichées par page du graphique
-const ACTIVITIES_PER_PAGE = 7;
-// libellés des jours affichés sous le graphique
-const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-
 type BpmCardProps = {
-  data: UserActivity[];
+  pages: BpmPage[];
 };
 
 // type du tooltip passé à Recharts
@@ -34,7 +24,7 @@ type BpmTooltipProps = {
       min: number;
       max: number;
       average: number;
-      date: string;
+      tooltipDateLabel: string;
     };
   }>;
 };
@@ -48,7 +38,7 @@ function CustomBpmTooltip({ active, payload }: BpmTooltipProps) {
 
   return (
     <div className="bpm-card__tooltip">
-      <p className="bpm-card__tooltip-date">{formatTooltipActivityDate(d.date)}</p>
+      <p className="bpm-card__tooltip-date">{d.tooltipDateLabel}</p>
       <p className="bpm-card__tooltip-value">Min : {d.min} BPM</p>
       <p className="bpm-card__tooltip-value">Max : {d.max} BPM</p>
       <p className="bpm-card__tooltip-value">Moy : {d.average} BPM</p>
@@ -57,12 +47,8 @@ function CustomBpmTooltip({ active, payload }: BpmTooltipProps) {
 }
 
 // carte des fréquences cardiaques, barres min/max et ligne de moyenne
-export default function BpmCard({ data }: BpmCardProps) {
-  // on trie les activités par date avant d'afficher
-  const sortedActivities = sortActivitiesByDate(data);
-
-  // nombre de pages, toujours au moins 1
-  const pageCount = Math.max(1, Math.ceil(sortedActivities.length / ACTIVITIES_PER_PAGE));
+export default function BpmCard({ pages }: BpmCardProps) {
+  const pageCount = pages.length;
 
   // on ouvre par défaut sur la dernière page (données récentes)
   const [pageIndex, setPageIndex] = useState(Math.max(pageCount - 1, 0));
@@ -73,29 +59,8 @@ export default function BpmCard({ data }: BpmCardProps) {
     setPageIndex(Math.max(pageCount - 1, 0));
   }, [pageCount]);
 
-  // activités visibles de la page courante
-  const pageStart = pageIndex * ACTIVITIES_PER_PAGE;
-  const visibleActivities = sortedActivities.slice(pageStart, pageStart + ACTIVITIES_PER_PAGE);
-
-  // on formate les données pour Recharts
-  const bpmChartData = visibleActivities.map((activity, index) => ({
-    day: DAY_LABELS[index % DAY_LABELS.length],
-    min: activity.heartRate.min,
-    max: activity.heartRate.max,
-    average: activity.heartRate.average,
-    date: activity.date,
-  }));
-
-  // moyenne des bpm moyens affichée dans le titre
-  const averageBpm =
-    bpmChartData.length > 0
-      ? bpmChartData.reduce((total, item) => total + item.average, 0) / bpmChartData.length
-      : 0;
-
-  // période affichée dans l'en-tête
-  const startDate = bpmChartData[0]?.date;
-  const endDate = bpmChartData[bpmChartData.length - 1]?.date;
-  const period = startDate && endDate ? formatActivityPeriod(startDate, endDate) : "Aucune donnée";
+  const currentPage = pages[pageIndex] ?? pages[0];
+  const bpmChartData = currentPage?.chartData ?? [];
 
   // désactive les flèches aux extrémités
   const canGoToPreviousPage = pageIndex > 0;
@@ -105,7 +70,7 @@ export default function BpmCard({ data }: BpmCardProps) {
     <section className="bpm-card">
       <div className="bpm-card__header">
         <div className="bpm-card__header-left">
-          <h3 className="bpm-card__title">{Math.round(averageBpm)} BPM</h3>
+          <h3 className="bpm-card__title">{currentPage.averageBpmLabel}</h3>
           <p className="bpm-card__subtitle">Fréquence cardiaque moyenne</p>
         </div>
 
@@ -120,7 +85,7 @@ export default function BpmCard({ data }: BpmCardProps) {
           >
             ‹
           </button>
-          <span>{period}</span>
+          <span>{currentPage.periodLabel}</span>
           <button
             type="button"
             className="bpm-card__arrow"
@@ -159,7 +124,8 @@ export default function BpmCard({ data }: BpmCardProps) {
               fill="#f3b8ac"
               radius={[10, 10, 10, 10]}
               barSize={14}
-              isAnimationActive={false}
+              animationDuration={360}
+              animationEasing="ease-out"
             />
             {/* barre du bpm maximum */}
             <Bar
@@ -167,7 +133,8 @@ export default function BpmCard({ data }: BpmCardProps) {
               fill="#ff3b0a"
               radius={[10, 10, 10, 10]}
               barSize={14}
-              isAnimationActive={false}
+              animationDuration={360}
+              animationEasing="ease-out"
             />
             {/* ligne de la moyenne, change de couleur au survol */}
             <Line
@@ -177,7 +144,8 @@ export default function BpmCard({ data }: BpmCardProps) {
               strokeWidth={3}
               dot={{ r: 4, fill: "#1f38ff", stroke: "#ffffff", strokeWidth: 1 }}
               activeDot={{ r: 5, fill: "#1f38ff", stroke: "#ffffff", strokeWidth: 1 }}
-              isAnimationActive={false}
+              animationDuration={420}
+              animationEasing="ease-out"
             />
           </ComposedChart>
         </ResponsiveContainer>

@@ -3,17 +3,14 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --footer-height: 74px;
-  --page-transition-duration: 720ms;
-  --page-transition-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --page-transition-duration: 220ms;
+  --page-transition-ease: ease-out;
   font-family: var(--font-sans);
 }
 
 /* styles globaux de base */
 body {
-  position: relative;
-  min-height: 100vh;
   margin: 0;
-  padding-bottom: var(--footer-height);
   background: #f3f3fb;
   font-family: Arial, sans-serif;
   box-sizing: border-box;
@@ -31,51 +28,53 @@ body {
   }
 }
 
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* animation fluide simple à chaque changement de route */
+.route-content {
+  flex: 1;
+  animation: routeFadeIn var(--page-transition-duration) var(--page-transition-ease);
+}
+
 /* animation d'entrée des pages */
 .page {
   min-height: 100%;
 }
 
-::view-transition-group(root) {
-  animation-duration: var(--page-transition-duration);
-  animation-timing-function: var(--page-transition-ease);
+.feedback-panel {
+  width: min(560px, calc(100% - 48px));
+  margin: 72px auto;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #202020;
+  box-shadow: 0 18px 40px rgba(31, 56, 255, 0.08);
+  box-sizing: border-box;
 }
 
-::view-transition-old(root) {
-  animation: pageFadeOut 380ms ease-out both;
+.feedback-panel--error {
+  border: 1px solid rgba(209, 26, 42, 0.18);
+  background: #fff6f7;
+  color: #9b1f2c;
+  box-shadow: 0 18px 40px rgba(209, 26, 42, 0.08);
 }
 
-::view-transition-new(root) {
-  animation: pageFadeIn var(--page-transition-duration) var(--page-transition-ease)
-    both;
-}
-
-@keyframes pageFadeOut {
-  from {
-    opacity: 1;
-    filter: blur(0);
-  }
-  to {
-    opacity: 0;
-    filter: blur(2px);
-  }
-}
-
-@keyframes pageFadeIn {
+@keyframes routeFadeIn {
   from {
     opacity: 0;
-    filter: blur(8px);
   }
   to {
     opacity: 1;
-    filter: blur(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page,
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  .route-content,
+  .app-shell {
     animation: none;
   }
 }

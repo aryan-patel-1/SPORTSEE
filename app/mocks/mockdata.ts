@@ -1,4 +1,4 @@
-import type { UserActivity } from "../utils/activity";
+import type { UserActivity } from "../utils/date";
 
 export const mockUserInfo = {
   profile: {

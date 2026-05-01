@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router";
 import { saveToken } from "../utils/auth";
-import { loginUser } from "../services/api";
+import { getErrorMessage, loginUser } from "../services/api";
 import { UserContext } from "../context/UserContext";
 import "../css/login.css";
 
@@ -39,76 +39,78 @@ export default function Login() {
           username,
           userId: data.userId,
         });
-        navigate("/dashboard");
+        navigate("/dashboard", { viewTransition: true });
       } else {
         setError("Identifiants incorrects");
       }
-    } catch {
-      setError("Identifiants incorrects ou erreur serveur");
+    } catch (error) {
+      setError(getErrorMessage(error, "Connexion impossible pour le moment."));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <main className="login-page">
-      <section className="login-page__left">
-        <div className="login-page__logo">
-          <img src="/logo.png" alt="SportSee" />
-        </div>
+    <div className="page">
+      <main className="login-page">
+        <section className="login-page__left">
+          <div className="login-page__logo">
+            <img src="/logo.png" alt="SportSee" />
+          </div>
 
-        <div className="login-card">
-          <h1 className="login-card__title">
-            Transformez
-            <br />
-            vos stats en résultats
-          </h1>
+          <div className="login-card">
+            <h1 className="login-card__title">
+              Transformez
+              <br />
+              vos stats en résultats
+            </h1>
 
-          <h2 className="login-card__subtitle">Se connecter</h2>
+            <h2 className="login-card__subtitle">Se connecter</h2>
 
-          <form className="login-form" onSubmit={handleSubmit}>
-            <div className="login-form__group">
-              <label htmlFor="username">Adresse email</label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-              />
-            </div>
+            <form className="login-form" onSubmit={handleSubmit}>
+              <div className="login-form__group">
+                <label htmlFor="username">Adresse email</label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                />
+              </div>
 
-            <div className="login-form__group">
-              <label htmlFor="password">Mot de passe</label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
+              <div className="login-form__group">
+                <label htmlFor="password">Mot de passe</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
 
-            {/* bouton désactivé pendant la requête pour éviter les doubles envois */}
-            <button className="login-form__button" type="submit" disabled={loading}>
-              {loading ? "Connexion..." : "Se connecter"}
-            </button>
-          </form>
+              {/* bouton désactivé pendant la requête pour éviter les doubles envois */}
+              <button className="login-form__button" type="submit" disabled={loading}>
+                {loading ? "Connexion..." : "Se connecter"}
+              </button>
+            </form>
 
-          <p className="login-card__forgot">Mot de passe oublié ?</p>
+            <p className="login-card__forgot">Mot de passe oublié ?</p>
 
-          {/* message d'erreur uniquement si renseigné */}
-          {error && <p className="login-card__error">{error}</p>}
-        </div>
-      </section>
+            {/* message d'erreur uniquement si renseigné */}
+            {error && <p className="login-card__error">{error}</p>}
+          </div>
+        </section>
 
-      <section className="login-page__right">
-        <img
-          className="login-page__image"
-          src="/login-runner.png"
-          alt="Course à pied"
-        />
-      </section>
-    </main>
+        <section className="login-page__right">
+          <img
+            className="login-page__image"
+            src="/login-runner.png"
+            alt="Course à pied"
+          />
+        </section>
+      </main>
+    </div>
   );
 }

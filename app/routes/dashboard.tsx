@@ -8,7 +8,14 @@ import DistanceCard from "../components/graphics/DistanceCard";
 import BpmCard from "../components/graphics/BpmCard";
 import WeeklyStats from "../components/graphics/WeeklyStats";
 import { getUserInfo, getUserActivity, getUserGoal } from "../services/dataProvider";
-import type { UserActivity, WeeklyDistancePoint } from "../utils/activity";
+import { getErrorMessage } from "../services/api";
+import type { UserActivity, WeeklyDistancePoint } from "../utils/date";
+import {
+  buildBpmPages,
+  buildDistancePages,
+  getProfileBannerViewModel,
+  getWeeklyStatsViewModel,
+} from "../utils/viewModels";
 import styles from "../css/dashboard.module.css";
 
 // page principale, affiche la bannière, les graphiques et la semaine en cours
@@ -51,8 +58,13 @@ export default function Dashboard() {
         setGoal(userGoal);
         setActivity(activityResponse.activities);
         setRunningData(activityResponse.runningData);
-      } catch {
-        setError("Erreur lors du chargement des données");
+      } catch (error) {
+        setError(
+          getErrorMessage(
+            error,
+            "Impossible de charger le tableau de bord. Vérifiez la connexion à l'API."
+          )
+        );
       } finally {
         setLoading(false);
       }
@@ -68,9 +80,16 @@ export default function Dashboard() {
 
   // affichages intermédiaires selon l'état du chargement
   if (!context) return <p>Erreur de contexte</p>;
-  if (loading) return <p>Chargement...</p>;
-  if (error) return <p>{error}</p>;
-  if (!userInfo) return <p>Données indisponibles</p>;
+  if (loading) return <div className="feedback-panel">Chargement du tableau de bord...</div>;
+  if (error) return <div className="feedback-panel feedback-panel--error">{error}</div>;
+  if (!userInfo) {
+    return <div className="feedback-panel feedback-panel--error">Données indisponibles.</div>;
+  }
+
+  const profileBanner = getProfileBannerViewModel(userInfo);
+  const distancePages = buildDistancePages(runningData);
+  const bpmPages = buildBpmPages(activity);
+  const weeklyStats = getWeeklyStatsViewModel(activity, goal);
 
   return (
     <div className="page">
@@ -78,20 +97,20 @@ export default function Dashboard() {
 
       <main className={styles.dashboard}>
         {/* bannière haute avec photo et distance totale */}
-        <ProfileBanner data={userInfo} />
+        <ProfileBanner data={profileBanner} />
 
         <section className={styles.dashboard__performances}>
           <h2 className={styles.title}>Vos dernières performances</h2>
 
           {/* deux graphiques côte à côte, distance et fréquence cardiaque */}
           <div className={styles.dashboard__cards}>
-            <DistanceCard runningData={runningData} />
-            <BpmCard data={activity} />
+            <DistanceCard pages={distancePages} />
+            <BpmCard pages={bpmPages} />
           </div>
         </section>
 
         {/* stats de la semaine en cours */}
-        <WeeklyStats data={activity} goal={goal} />
+        <WeeklyStats data={weeklyStats} />
       </main>
     </div>
   );

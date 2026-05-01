@@ -1,6 +1,6 @@
 import { mockUserInfo, mockUserActivity } from "../mocks/mockdata";
 import { fetchUserInfo, fetchUserActivity, fetchUserGoal } from "./api";
-import { getWeeklyDistanceData } from "../utils/activity";
+import { getWeeklyDistanceData } from "../utils/date";
 
 // passer à true pour utiliser les données de test sans backend
 const USE_MOCK = false;

@@ -56,7 +56,7 @@ function formatShortDate(dateString: string, includeYear?: boolean) {
 
 // date longue en français, ex "10 février 2025"
 export function formatLongActivityDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("fr-FR", {
+  return parseDate(dateString).toLocaleDateString("fr-FR", {
     day: "numeric",
     month: "long",
     year: "numeric",

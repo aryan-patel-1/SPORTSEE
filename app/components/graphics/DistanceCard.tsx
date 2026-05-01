@@ -8,18 +8,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  formatActivityPeriod,
-  formatTooltipActivityPeriod,
-  type WeeklyDistancePoint,
-} from "../../utils/activity";
+import type { DistancePage } from "../../utils/viewModels";
 import "../../css/distance-card.css";
 
-// nombre de semaines affichées par page
-const WEEKS_PER_PAGE = 4;
-
 type DistanceCardProps = {
-  runningData: WeeklyDistancePoint[];
+  pages: DistancePage[];
 };
 
 type DistanceTooltipProps = {
@@ -28,56 +21,29 @@ type DistanceTooltipProps = {
     payload: {
       week: string;
       distance: number;
-      startDate: string;
-      endDate: string;
+      tooltipPeriodLabel: string;
+      distanceLabel: string;
     };
   }>;
 };
-
-// découpe les données en pages de 4 semaines
-
-function buildWeekPages(runningData: WeeklyDistancePoint[]) {
-  if (runningData.length === 0) return [[]];
-
-  const pages: WeeklyDistancePoint[][] = [];
-  // taille de la première page (0 si total déjà multiple de WEEKS_PER_PAGE)
-  const offset = runningData.length % WEEKS_PER_PAGE;
-
-  if (offset > 0) {
-    pages.push(runningData.slice(0, offset));
-  }
-
-  // découpage régulier du reste en blocs pleins
-  for (let i = offset; i < runningData.length; i += WEEKS_PER_PAGE) {
-    pages.push(runningData.slice(i, i + WEEKS_PER_PAGE));
-  }
-
-  return pages;
-}
 
 // tooltip personnalisé, défini en dehors pour éviter une recréation à chaque render
 function CustomTooltip({ active, payload }: DistanceTooltipProps) {
   if (!active || !payload?.length) return null;
 
-  const { startDate, endDate, distance } = payload[0].payload;
+  const { tooltipPeriodLabel, distanceLabel } = payload[0].payload;
 
   return (
     <div className="distance-card__tooltip">
-      <p className="distance-card__tooltip-date">
-        {formatTooltipActivityPeriod(startDate, endDate)}
-      </p>
-      <p className="distance-card__tooltip-value">
-        {/* format français, virgule à la place du point */}
-        {distance.toFixed(1).replace(".", ",")} km
-      </p>
+      <p className="distance-card__tooltip-date">{tooltipPeriodLabel}</p>
+      <p className="distance-card__tooltip-value">{distanceLabel}</p>
     </div>
   );
 }
 
 // carte de la distance hebdomadaire avec navigation par pages
-export default function DistanceCard({ runningData }: DistanceCardProps) {
-  const weekPages = buildWeekPages(runningData);
-  const pageCount = weekPages.length;
+export default function DistanceCard({ pages }: DistanceCardProps) {
+  const pageCount = pages.length;
 
   // on ouvre sur la dernière page (semaines les plus récentes)
   const [pageIndex, setPageIndex] = useState(Math.max(pageCount - 1, 0));
@@ -87,20 +53,8 @@ export default function DistanceCard({ runningData }: DistanceCardProps) {
     setPageIndex(Math.max(pageCount - 1, 0));
   }, [pageCount]);
 
-  // on ajoute un label S1, S2... pour l'axe X
-  const chartData = weekPages[pageIndex].map((week, index) => ({
-    ...week,
-    week: `S${index + 1}`,
-  }));
-
-  // moyenne affichée dans le titre
-  const totalDistance = chartData.reduce((total, item) => total + item.distance, 0);
-  const averageDistance = chartData.length ? totalDistance / chartData.length : 0;
-
-  // période visible dans l'en-tête
-  const startDate = chartData[0]?.startDate;
-  const endDate = chartData[chartData.length - 1]?.endDate;
-  const period = startDate && endDate ? formatActivityPeriod(startDate, endDate) : "Aucune donnée";
+  const currentPage = pages[pageIndex] ?? pages[0];
+  const chartData = currentPage?.chartData ?? [];
 
   const canGoToPreviousPage = pageIndex > 0;
   const canGoToNextPage = pageIndex < pageCount - 1;
@@ -109,9 +63,7 @@ export default function DistanceCard({ runningData }: DistanceCardProps) {
     <section className="distance-card">
       <div className="distance-card__header">
         <div className="distance-card__header-left">
-          <h3 className="distance-card__title">
-            {Math.round(averageDistance)}km en moyenne
-          </h3>
+          <h3 className="distance-card__title">{currentPage.averageDistanceLabel} en moyenne</h3>
           <p className="distance-card__subtitle">
             Total des kilomètres 4 dernières semaines
           </p>
@@ -128,7 +80,7 @@ export default function DistanceCard({ runningData }: DistanceCardProps) {
           >
             ‹
           </button>
-          <span>{period}</span>
+          <span>{currentPage.periodLabel}</span>
           <button
             type="button"
             className="distance-card__arrow"
@@ -155,6 +107,8 @@ export default function DistanceCard({ runningData }: DistanceCardProps) {
               activeBar={{ fill: "#1f38ff" }}
               radius={[20, 20, 20, 20]}
               barSize={12}
+              animationDuration={360}
+              animationEasing="ease-out"
             />
           </BarChart>
         </ResponsiveContainer>

@@ -3,61 +3,31 @@ import { useNavigate } from "react-router";
 import { getToken } from "../utils/auth";
 import { UserContext } from "../context/UserContext";
 import { getUserInfo, getUserActivity } from "../services/dataProvider";
-import { formatLongActivityDate, type UserActivity } from "../utils/activity";
+import { getErrorMessage } from "../services/api";
+import type { UserActivity } from "../utils/date";
+import { getProfileViewModel } from "../utils/viewModels";
 import Header from "../components/Header";
 import "../css/profile.css";
 
-// convertit "male"/"female" en libellé français
-function formatGenderLabel(gender: string | null | undefined) {
-  if (gender === "male") return "Homme";
-  if (gender === "female") return "Femme";
-  return "Non renseigné";
+interface DataProfilCardProps {
+  title: string[];
+  main: string;
+  unit: string;
 }
 
-// formate la taille en "1m78"
-
-function formatHeight(height: number | string | null | undefined) {
-  const value = Number(height);
-  if (!Number.isFinite(value) || value <= 0) return "Non renseignée";
-
-  // normalisation en cm avant de découper en m + reste
-  const cm = Math.round(value >= 3 ? value : value * 100);
-
-  // on force le reste sur 2 chiffres pour que "1m07" ne devienne pas "1m7"
-  return `${Math.floor(cm / 100)}m${String(cm % 100).padStart(2, "0")}`;
-}
-
-// calcule le nombre de jours sans activité depuis l'inscription
-// principe : (nb total de jours depuis l'inscription) - (jours avec au moins une activité)
-// les dates sont au format "YYYY-MM-DD" donc on peut comparer directement en string
-function getRestDaysCount(activity: UserActivity[], startWeek: string | null | undefined) {
-  if (!startWeek) return 0;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const oneDayMs = 24 * 60 * 60 * 1000;
-
-  // diff de jours arrondie + 1 pour inclure le jour d'inscription ET aujourd'hui
-  const totalDays =
-    Math.floor((Date.parse(today) - Date.parse(startWeek)) / oneDayMs) + 1;
-
-  // Set sur item.date pour ne compter qu'une fois les jours avec plusieurs séances
-  const activeDays = new Set(
-    activity
-      .filter((item) => item.date >= startWeek && item.date <= today)
-      .map((item) => item.date)
-  ).size;
-
-  // Math.max protège des cas tordus (date d'inscription dans le futur, etc.)
-  return Math.max(0, totalDays - activeDays);
-}
-
-// composant qui affiche une stat avec sa valeur et son unité
-function StatValue({ main, unit }: { main: string; unit: string }) {
+function DataProfilCard({ title, main, unit }: DataProfilCardProps) {
   return (
-    <p className="profile-stat__value">
-      <span className="profile-stat__main">{main}</span>
-      <span className="profile-stat__unit">{unit}</span>
-    </p>
+    <article className="profile-stat">
+      <p className="profile-stat__label">
+        {title.map((line, i) => (
+          <span key={i}>{line}{i < title.length - 1 && " "}</span>
+        ))}
+      </p>
+      <p className="profile-stat__value">
+        <span className="profile-stat__main">{main}</span>
+        <span className="profile-stat__unit">{unit}</span>
+      </p>
+    </article>
   );
 }
 
@@ -91,8 +61,13 @@ export default function Profile() {
 
         setUserInfo(userData);
         setActivity(activityResponse.activities);
-      } catch {
-        setError("Erreur lors du chargement du profil");
+      } catch (error) {
+        setError(
+          getErrorMessage(
+            error,
+            "Impossible de charger le profil. Vérifiez la connexion à l'API."
+          )
+        );
       } finally {
         setLoading(false);
       }
@@ -106,34 +81,13 @@ export default function Profile() {
   };
 
   if (!context) return <p>Erreur de contexte</p>;
-  if (loading) return <p>Vérification...</p>;
-  if (error) return <p>{error}</p>;
-  if (!userInfo) return <p>Données indisponibles</p>;
+  if (loading) return <div className="feedback-panel">Chargement du profil...</div>;
+  if (error) return <div className="feedback-panel feedback-panel--error">{error}</div>;
+  if (!userInfo) {
+    return <div className="feedback-panel feedback-panel--error">Données indisponibles.</div>;
+  }
 
-  const { profile } = userInfo;
-  const statistics = userInfo.statistics ?? {};
-
-  // totaux calculés en un seul parcours du tableau (reduce)
-  // utilisés si l'API ne renvoie pas directement les statistiques globales
-  const activityTotals = activity.reduce(
-    (acc, item) => ({
-      calories: acc.calories + item.caloriesBurned,
-      distance: acc.distance + item.distance,
-      duration: acc.duration + item.duration,
-    }),
-    { calories: 0, distance: 0, duration: 0 }
-  );
-
-  // on privilégie les stats de l'API, sinon on bascule sur le recalcul local
-  const totalCalories = statistics.totalCalories ?? activityTotals.calories;
-  const totalDistance = statistics.totalDistance ?? activityTotals.distance;
-  const totalDuration = statistics.totalDuration ?? activityTotals.duration;
-  const totalSessions = statistics.totalSessions ?? activity.length;
-  const totalRestDays = getRestDaysCount(activity, profile.createdAt);
-
-  // conversion des minutes totales en heures + minutes
-  const hours = Math.floor(totalDuration / 60);
-  const minutes = totalDuration % 60;
+  const profile = getProfileViewModel(userInfo, activity);
 
   return (
     <div className="page">
@@ -146,16 +100,12 @@ export default function Profile() {
             <article className="profile-card profile-card--identity">
               <img
                 src={profile.profilePicture}
-                alt={`${profile.firstName} ${profile.lastName}`}
+                alt={profile.fullName}
                 className="profile-card__image"
               />
               <div className="profile-card__identity-text">
-                <h1 className="profile-card__name">
-                  {profile.firstName} {profile.lastName}
-                </h1>
-                <p className="profile-card__member">
-                  Membre depuis le {formatLongActivityDate(profile.createdAt)}
-                </p>
+                <h1 className="profile-card__name">{profile.fullName}</h1>
+                <p className="profile-card__member">{profile.memberSinceLabel}</p>
               </div>
             </article>
 
@@ -163,9 +113,9 @@ export default function Profile() {
               <h2 className="profile-card__title">Votre profil</h2>
               <div className="profile-card__details-list">
                 <p><strong>Âge :</strong> {profile.age}</p>
-                <p><strong>Genre :</strong> {formatGenderLabel(profile.gender)}</p>
-                <p><strong>Taille :</strong> {formatHeight(profile.height)}</p>
-                <p><strong>Poids :</strong> {profile.weight} kg</p>
+                <p><strong>Genre :</strong> {profile.genderLabel}</p>
+                <p><strong>Taille :</strong> {profile.heightLabel}</p>
+                <p><strong>Poids :</strong> {profile.weightLabel}</p>
               </div>
             </article>
           </div>
@@ -174,36 +124,15 @@ export default function Profile() {
           <div className="profile-page__right">
             <div className="profile-stats__header">
               <h2 className="profile-stats__title">Vos statistiques</h2>
-              <p className="profile-stats__subtitle">
-                depuis le {formatLongActivityDate(profile.createdAt)}
-              </p>
+              <p className="profile-stats__subtitle">{profile.statsSubtitle}</p>
             </div>
 
             <div className="profile-stats__grid">
-              <article className="profile-stat">
-                <p className="profile-stat__label">Temps total couru</p>
-                <StatValue main={`${hours}h`} unit={`${minutes}min`} />
-              </article>
-
-              <article className="profile-stat">
-                <p className="profile-stat__label">Calories brûlées</p>
-                <StatValue main={String(totalCalories)} unit="cal" />
-              </article>
-
-              <article className="profile-stat">
-                <p className="profile-stat__label">Distance totale parcourue</p>
-                <StatValue main={String(Math.round(totalDistance))} unit="km" />
-              </article>
-
-              <article className="profile-stat">
-                <p className="profile-stat__label">Nombre de jours de repos</p>
-                <StatValue main={String(totalRestDays)} unit="jours" />
-              </article>
-
-              <article className="profile-stat">
-                <p className="profile-stat__label">Nombre de sessions</p>
-                <StatValue main={String(totalSessions)} unit="sessions" />
-              </article>
+              <DataProfilCard title={["Temps total", "couru"]} main={profile.totalDuration.main} unit={profile.totalDuration.unit} />
+              <DataProfilCard title={["Calories", "brûlées"]} main={profile.totalCalories.main} unit={profile.totalCalories.unit} />
+              <DataProfilCard title={["Distance totale", "parcourue"]} main={profile.totalDistance.main} unit={profile.totalDistance.unit} />
+              <DataProfilCard title={["Jours", "de repos"]} main={profile.totalRestDays.main} unit={profile.totalRestDays.unit} />
+              <DataProfilCard title={["Nombre", "de sessions"]} main={profile.totalSessions.main} unit={profile.totalSessions.unit} />
             </div>
           </div>
         </section>
